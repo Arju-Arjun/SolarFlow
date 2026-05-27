@@ -1,6 +1,8 @@
 import re
-import random
-import time
+# ========== OTP DISABLED - Imports commented out ==========
+# import random  # Used only for OTP generation
+# import time    # Used only for OTP expiration tracking
+# ===========================================================
 from flask import Blueprint, current_app, request, jsonify
 from flask_jwt_extended import create_access_token
 from extensions import db, bcrypt, mail
@@ -11,13 +13,12 @@ auth_bp = Blueprint("auth_bp", __name__)
 
 EMAIL_REGEX = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
-# ================= OTP STORAGE =================
-otp_store = {}
-
-def generate_otp():
-    return str(random.randint(100000, 999999))
-
-# ==============================================
+# ================= OTP DISABLED - Code Commented Out =================
+# otp_store = {}  # OTP storage disabled - was used to store OTP codes
+#
+# def generate_otp():
+#     return str(random.randint(100000, 999999))  # OTP generation disabled
+# ======================================================================
 
 def _valid_email(email):
     return bool(email and EMAIL_REGEX.match(email))
@@ -49,74 +50,80 @@ def register():
 
     return jsonify({"message": "Registration successful."}), 201
 
-# ================= SEND OTP =================
+# ================= SEND OTP - DISABLED =================
+# @auth_bp.route("/send-otp", methods=["POST"])
+# def send_otp():
+#     data = request.get_json() or {}
+#     email = data.get("email", "").strip().lower()
+#
+#     if not _valid_email(email):
+#         return jsonify({"message": "Invalid email"}), 400
+#
+#     if User.query.filter_by(email=email).first():
+#         return jsonify({"message": "Email already registered"}), 409
+#
+#     otp = generate_otp()
+#
+#     otp_store[email] = {
+#         "otp": otp,
+#         "expires": time.time() + 300
+#     }
+#
+#     message = f"Your OTP is {otp}. It is valid for 5 minutes."
+#
+#     # 🔥 IMPORTANT FIX
+#     success = send_email("Your OTP Code", [email], message)
+#
+#     if not success:
+#         return jsonify({"message": "Failed to send OTP"}), 500
+#
+#     return jsonify({"message": "OTP sent successfully"}), 200
+
+# ================= SEND OTP - TEMPORARY DISABLED RESPONSE =================
 @auth_bp.route("/send-otp", methods=["POST"])
 def send_otp():
-    data = request.get_json() or {}
-    email = data.get("email", "").strip().lower()
+    return jsonify({"message": "OTP verification temporarily disabled"}), 503
 
-    if not _valid_email(email):
-        return jsonify({"message": "Invalid email"}), 400
+# ================= VERIFY OTP + REGISTER - DISABLED =================
+# @auth_bp.route("/verify-otp-register", methods=["POST"])
+# def verify_otp_register():
+#     data = request.get_json() or {}
+#
+#     name = data.get("name", "").strip()
+#     email = data.get("email", "").strip().lower()
+#     password = data.get("password", "")
+#     confirm_password = data.get("confirmPassword", "")
+#     mobile = data.get("mobile", "").strip()
+#     otp = data.get("otp", "").strip()
+#
+#     if not name or not _valid_email(email) or not _validate_passwords(password, confirm_password) or not mobile or not otp:
+#         return jsonify({"message": "Invalid data"}), 400
+#
+#     stored = otp_store.get(email)
+#
+#     if not stored:
+#         return jsonify({"message": "OTP not found"}), 400
+#
+#     if time.time() > stored["expires"]:
+#         return jsonify({"message": "OTP expired"}), 400
+#
+#     if stored["otp"] != otp:
+#         return jsonify({"message": "Invalid OTP"}), 400
+#
+#     password_hash = bcrypt.generate_password_hash(password).decode("utf-8")
+#     user = User(name=name, email=email, password=password_hash, mobile=mobile)
+#
+#     db.session.add(user)
+#     db.session.commit()
+#
+#     otp_store.pop(email, None)
+#
+#     return jsonify({"message": "Registration successful with OTP verification"}), 201
 
-    if User.query.filter_by(email=email).first():
-        return jsonify({"message": "Email already registered"}), 409
-
-    otp = generate_otp()
-
-    otp_store[email] = {
-        "otp": otp,
-        "expires": time.time() + 300
-    }
-
-    message = f"Your OTP is {otp}. It is valid for 5 minutes."
-
-    # 🔥 IMPORTANT FIX
-    success = send_email("Your OTP Code", [email], message)
-
-    print("MAIL USER:", current_app.config.get("MAIL_USERNAME"))
-    print("MAIL PASS EXISTS:", bool(current_app.config.get("MAIL_PASSWORD")))
-    print("MAIL SERVER:", current_app.config.get("MAIL_SERVER"))
-
-    if not success:
-        return jsonify({"message": "Failed to send OTP"}), 500
-
-    return jsonify({"message": "OTP sent successfully"}), 200
-
-# ================= VERIFY OTP + REGISTER =================
+# ================= VERIFY OTP + REGISTER - TEMPORARY DISABLED RESPONSE =================
 @auth_bp.route("/verify-otp-register", methods=["POST"])
 def verify_otp_register():
-    data = request.get_json() or {}
-
-    name = data.get("name", "").strip()
-    email = data.get("email", "").strip().lower()
-    password = data.get("password", "")
-    confirm_password = data.get("confirmPassword", "")
-    mobile = data.get("mobile", "").strip()
-    otp = data.get("otp", "").strip()
-
-    if not name or not _valid_email(email) or not _validate_passwords(password, confirm_password) or not mobile or not otp:
-        return jsonify({"message": "Invalid data"}), 400
-
-    stored = otp_store.get(email)
-
-    if not stored:
-        return jsonify({"message": "OTP not found"}), 400
-
-    if time.time() > stored["expires"]:
-        return jsonify({"message": "OTP expired"}), 400
-
-    if stored["otp"] != otp:
-        return jsonify({"message": "Invalid OTP"}), 400
-
-    password_hash = bcrypt.generate_password_hash(password).decode("utf-8")
-    user = User(name=name, email=email, password=password_hash, mobile=mobile)
-
-    db.session.add(user)
-    db.session.commit()
-
-    otp_store.pop(email, None)
-
-    return jsonify({"message": "Registration successful with OTP verification"}), 201
+    return jsonify({"message": "OTP verification temporarily disabled"}), 503
 
 # ================= LOGIN =================
 @auth_bp.route("/login", methods=["POST"])

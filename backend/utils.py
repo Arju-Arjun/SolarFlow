@@ -1,10 +1,11 @@
+import os
 from flask import current_app
 from flask_mail import Message
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from extensions import mail
 
 
-# ================= TOKEN =================
+
 def _get_serializer():
     secret = current_app.config.get("SECRET_KEY")
     return URLSafeTimedSerializer(secret, salt="password-reset-salt")
@@ -21,29 +22,37 @@ def verify_reset_token(token, expiration=3600):
         return None
 
 
-# ================= EMAIL =================
+# ================= EMAIL FUNCTION =================
 def send_email(subject, recipients, body, html=None):
+   
+    if not recipients:
+        return False
+
+    sender = current_app.config.get("MAIL_DEFAULT_SENDER") or current_app.config.get("MAIL_USERNAME")
+
+
+    msg = Message(
+        subject=subject,
+        sender=sender,
+        recipients=recipients,
+        body=body
+    )
+
+    if html:
+        msg.html = html
+
     try:
-        if not recipients:
-            return False
+        print("Sending email...")
+        print("Sender:", sender)
+        print("Recipients:", recipients)
 
-        sender = current_app.config.get("MAIL_DEFAULT_SENDER")
+        mail.send(msg)
 
-        msg = Message(
-            subject=subject,
-            sender=sender,
-            recipients=recipients,
-            body=body,
-            html=html
-        )
-
-        # Render-safe send
-        with mail.connect() as conn:
-            conn.send(msg)
-
-        print("EMAIL SENT SUCCESSFULLY")
+        print("Email sent successfully ✅")
         return True
 
     except Exception as e:
         print("EMAIL ERROR:", str(e))
+        import traceback
+        traceback.print_exc()
         return False
