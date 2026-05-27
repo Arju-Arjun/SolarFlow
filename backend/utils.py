@@ -1,4 +1,3 @@
-import os
 from flask import current_app
 from flask_mail import Message
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
@@ -30,12 +29,6 @@ def send_email(subject, recipients, body, html=None):
 
         sender = current_app.config.get("MAIL_DEFAULT_SENDER")
 
-        print("\n===== EMAIL DEBUG =====")
-        print("SERVER:", current_app.config.get("MAIL_SERVER"))
-        print("PORT:", current_app.config.get("MAIL_PORT"))
-        print("USER:", current_app.config.get("MAIL_USERNAME"))
-        print("======================\n")
-
         msg = Message(
             subject=subject,
             sender=sender,
@@ -44,7 +37,9 @@ def send_email(subject, recipients, body, html=None):
             html=html
         )
 
-        mail.send(msg)
+        # safer Render-compatible sending
+        with mail.connect() as conn:
+            conn.send(msg)
 
         print("EMAIL SENT SUCCESSFULLY ✅")
         return True
