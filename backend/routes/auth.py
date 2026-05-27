@@ -73,6 +73,10 @@ def send_otp():
     # 🔥 IMPORTANT FIX
     success = send_email("Your OTP Code", [email], message)
 
+    print("MAIL USER:", current_app.config.get("MAIL_USERNAME"))
+    print("MAIL PASS EXISTS:", bool(current_app.config.get("MAIL_PASSWORD")))
+    print("MAIL SERVER:", current_app.config.get("MAIL_SERVER"))
+
     if not success:
         return jsonify({"message": "Failed to send OTP"}), 500
 
