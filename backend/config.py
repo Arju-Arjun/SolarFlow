@@ -9,7 +9,7 @@ basedir = Path(__file__).resolve().parent
 
 
 class Config:
-    DEBUG = os.getenv("FLASK_DEBUG", "true").lower() == "true"
+    DEBUG = os.getenv("FLASK_DEBUG", "false").lower() == "true"
 
     SECRET_KEY = os.getenv("SECRET_KEY", "super-secret-key")
 
@@ -25,6 +25,7 @@ class Config:
     # ================= MAIL CONFIG =================
     MAIL_SERVER = os.getenv("MAIL_SERVER", "smtp.gmail.com")
     MAIL_PORT = int(os.getenv("MAIL_PORT", 587))
+
     MAIL_USE_TLS = os.getenv("MAIL_USE_TLS", "true").lower() == "true"
     MAIL_USE_SSL = os.getenv("MAIL_USE_SSL", "false").lower() == "true"
 
@@ -34,7 +35,13 @@ class Config:
     MAIL_DEFAULT_SENDER = os.getenv("MAIL_DEFAULT_SENDER") or MAIL_USERNAME
 
     # ================= FRONTEND =================
-    FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
+    FRONTEND_URL = os.getenv(
+        "FRONTEND_URL",
+        "http://localhost:3000"
+    )
 
     # ================= UPLOAD =================
-    UPLOAD_FOLDER = os.getenv("UPLOAD_FOLDER", str(basedir / "uploads"))
+    UPLOAD_FOLDER = os.getenv(
+        "UPLOAD_FOLDER",
+        str(basedir / "uploads")
+    )

@@ -54,7 +54,7 @@ def register():
 def send_otp():
     data = request.get_json() or {}
     email = data.get("email", "").strip().lower()
-    print(f"\n\n\n\n\nReceived OTP request for email: {email}")
+
     if not _valid_email(email):
         return jsonify({"message": "Invalid email"}), 400
 
@@ -62,20 +62,19 @@ def send_otp():
         return jsonify({"message": "Email already registered"}), 409
 
     otp = generate_otp()
-    print("\n\n\n\n\nGenerated OTP:", otp)
 
     otp_store[email] = {
         "otp": otp,
         "expires": time.time() + 300
     }
 
-    print("\n\n\n\n\nGenerated OTP:", otp,"\n\n\n\n\n",otp_store[email] )
-
     message = f"Your OTP is {otp}. It is valid for 5 minutes."
-    send_email("Your OTP Code", [email], message)
-    
-        
 
+    # 🔥 IMPORTANT FIX
+    success = send_email("Your OTP Code", [email], message)
+
+    if not success:
+        return jsonify({"message": "Failed to send OTP"}), 500
 
     return jsonify({"message": "OTP sent successfully"}), 200
 

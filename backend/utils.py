@@ -5,7 +5,7 @@ from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from extensions import mail
 
 
-
+# ================= TOKEN =================
 def _get_serializer():
     secret = current_app.config.get("SECRET_KEY")
     return URLSafeTimedSerializer(secret, salt="password-reset-salt")
@@ -22,37 +22,33 @@ def verify_reset_token(token, expiration=3600):
         return None
 
 
-# ================= EMAIL FUNCTION =================
+# ================= EMAIL =================
 def send_email(subject, recipients, body, html=None):
-   
-    if not recipients:
-        return False
-
-    sender = current_app.config.get("MAIL_DEFAULT_SENDER") or current_app.config.get("MAIL_USERNAME")
-
-
-    msg = Message(
-        subject=subject,
-        sender=sender,
-        recipients=recipients,
-        body=body
-    )
-
-    if html:
-        msg.html = html
-
     try:
-        print("Sending email...")
-        print("Sender:", sender)
-        print("Recipients:", recipients)
+        if not recipients:
+            return False
+
+        sender = current_app.config.get("MAIL_DEFAULT_SENDER")
+
+        print("\n===== EMAIL DEBUG =====")
+        print("SERVER:", current_app.config.get("MAIL_SERVER"))
+        print("PORT:", current_app.config.get("MAIL_PORT"))
+        print("USER:", current_app.config.get("MAIL_USERNAME"))
+        print("======================\n")
+
+        msg = Message(
+            subject=subject,
+            sender=sender,
+            recipients=recipients,
+            body=body,
+            html=html
+        )
 
         mail.send(msg)
 
-        print("Email sent successfully ✅")
+        print("EMAIL SENT SUCCESSFULLY ✅")
         return True
 
     except Exception as e:
-        print("EMAIL ERROR:", str(e))
-        import traceback
-        traceback.print_exc()
+        print("EMAIL ERROR ❌:", str(e))
         return False

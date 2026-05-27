@@ -11,4 +11,11 @@ bcrypt = Bcrypt()
 jwt = JWTManager()
 mail = Mail()
 migrate = Migrate()
-cors = CORS(origins=["http://localhost:3000", "http://127.0.0.1:3000"], supports_credentials=True)
+cors = CORS(
+    origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "https://solar-flow-8kcdlvr4w-arju-arjuns-projects.vercel.app"
+    ],
+    supports_credentials=True
+)
