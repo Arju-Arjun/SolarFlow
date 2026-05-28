@@ -178,17 +178,12 @@ const isSectionComplete = (section, workflowData) => {
 //payments
 
 if (section.key === "payment") {
-  if (!data) return true;
+  if (!data) return false;
 
-  const fields = ["advance", "total_received", "balance_due"];
-  const invalidPayments =
-    Number(data.advance) < 0 ||
-    Number(data.total_received) < 0 ||
-    Number(data.balance_due) < 0;
-  if (invalidPayments) return false;
-
-  return fields.every((field) =>
-    isTruthyField(data[field])
+  return (
+    Number(data.advance) > 0 &&
+    Number(data.total_received) > 0 &&
+    Number(data.balance_due) <= 0
   );
 }
 
