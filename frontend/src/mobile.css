@@ -1,0 +1,117 @@
+.mobile-tab-trigger {
+  display: none;
+  justify-content: flex-start;
+  margin-bottom: 16px;
+}
+
+.mobile-tab-trigger button {
+  background: #ffffff;
+  border: 1px solid #dfe3ea;
+  color: #0b5ed7;
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 18px;
+  transition: all 0.3s ease;
+}
+
+.mobile-tab-trigger button:hover {
+  background: #f2f6ff;
+}
+
+.mobile-side-menu {
+  position: fixed;
+  top: 0;
+  left: -320px;
+  width: min(320px, 90%);
+  height: 100%;
+  background: #ffffff;
+  box-shadow: 10px 0 30px rgba(0, 0, 0, 0.18);
+  transition: left 0.3s ease;
+  z-index: 1100;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.mobile-side-menu.open {
+  left: 0;
+}
+
+.mobile-side-menu-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px;
+  border-bottom: 1px solid #e3e8f0;
+  font-weight: 600;
+  color: #1f2b46;
+}
+
+.mobile-side-menu-header span {
+  font-size: 15px;
+}
+
+.menu-close-btn {
+  background: #ffffff;
+  border: 1px solid #dfe3ea;
+  color: #0b5ed7;
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 18px;
+  transition: all 0.3s ease;
+  margin-top: 25px;
+}
+
+.mobile-side-menu-list {
+  padding: 18px 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mobile-side-menu-list button {
+  width: 100%;
+  text-align: left;
+  background: #f6f8fc;
+  border: none;
+  color: #2e3a4b;
+  border-radius: 9px;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: background 0.25s ease, color 0.25s ease;
+}
+
+.mobile-side-menu-list button:hover {
+  background: #e9efff;
+}
+
+.mobile-side-menu-list button.active {
+  background: linear-gradient(135deg, #1466ff, #0b5ed7);
+  color: #ffffff;
+  box-shadow: 0 4px 10px rgba(20, 102, 255, 0.2);
+}
+
+.mobile-menu-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.32);
+  z-index: 1050;
+}
+
+@media (max-width: 768px) {
+  .tab-menu {
+    display: none;
+  }
+
+  .mobile-tab-trigger {
+    display: flex;
+  }
+}
