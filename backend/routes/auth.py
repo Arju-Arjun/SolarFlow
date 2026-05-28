@@ -1,7 +1,7 @@
 import re
 from flask import Blueprint, current_app, request, jsonify
 from flask_jwt_extended import create_access_token
-from extensions import db, bcrypt
+from extensions import db, bcrypt, mail
 from models import User
 from utils import send_email, generate_reset_token, verify_reset_token
 

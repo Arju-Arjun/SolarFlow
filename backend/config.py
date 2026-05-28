@@ -9,17 +9,13 @@ basedir = Path(__file__).resolve().parent
 
 
 class Config:
-<<<<<<< HEAD
     DEBUG = os.getenv("FLASK_DEBUG", "true").lower() == "true"
-=======
-    DEBUG = os.getenv("FLASK_DEBUG", "false").lower() == "true"
->>>>>>> 3ab017413f8238ea2d422d2e2e182d669acb772a
 
     SECRET_KEY = os.getenv("SECRET_KEY", "super-secret-key")
 
     SQLALCHEMY_DATABASE_URI = os.getenv(
         "DATABASE_URL",
-        f"sqlite:///{basedir.parent}/instance/solar_manager.db",
+        "postgresql://solar_db_oeq7_user:VDirM0tDnXsd3q5AYjCwdUcC6pBk7EwA@dpg-d8aro5ojs32c739flkmg-a.oregon-postgres.render.com/solar_db_oeq7",
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
@@ -29,10 +25,6 @@ class Config:
     # ================= MAIL CONFIG =================
     MAIL_SERVER = os.getenv("MAIL_SERVER", "smtp.gmail.com")
     MAIL_PORT = int(os.getenv("MAIL_PORT", 587))
-<<<<<<< HEAD
-=======
-
->>>>>>> 3ab017413f8238ea2d422d2e2e182d669acb772a
     MAIL_USE_TLS = os.getenv("MAIL_USE_TLS", "true").lower() == "true"
     MAIL_USE_SSL = os.getenv("MAIL_USE_SSL", "false").lower() == "true"
 
@@ -42,33 +34,7 @@ class Config:
     MAIL_DEFAULT_SENDER = os.getenv("MAIL_DEFAULT_SENDER") or MAIL_USERNAME
 
     # ================= FRONTEND =================
-<<<<<<< HEAD
-    FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
-    CORS_ORIGINS = [
-        url.strip()
-        for url in os.getenv(
-            "CORS_ORIGINS",
-            ",".join([
-                FRONTEND_URL,
-                "http://localhost:3000",
-                "http://127.0.0.1:3000",
-            ]),
-        ).split(",")
-        if url.strip()
-    ]
-    CORS_SUPPORTS_CREDENTIALS = True
+    FRONTEND_URL = os.getenv("FRONTEND_URL", "https://solar-flow-jet.vercel.app")
 
     # ================= UPLOAD =================
     UPLOAD_FOLDER = os.getenv("UPLOAD_FOLDER", str(basedir / "uploads"))
-=======
-    FRONTEND_URL = os.getenv(
-        "FRONTEND_URL",
-        "http://localhost:3000"
-    )
-
-    # ================= UPLOAD =================
-    UPLOAD_FOLDER = os.getenv(
-        "UPLOAD_FOLDER",
-        str(basedir / "uploads")
-    )
->>>>>>> 3ab017413f8238ea2d422d2e2e182d669acb772a

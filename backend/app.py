@@ -66,38 +66,17 @@ def create_app():
     # ================= STATIC FILES =================
     @app.route("/backend/static/uploads/<path:filename>")
     def uploaded_file(filename):
-<<<<<<< HEAD
-        upload_folder = app.config.get("UPLOAD_FOLDER")
-        if upload_folder:
-            if not os.path.isabs(upload_folder):
-                upload_folder = os.path.join(os.path.dirname(__file__), upload_folder)
-
-            if os.path.exists(os.path.join(upload_folder, filename)):
-                return send_from_directory(upload_folder, filename)
-
-        # Fallback to backend/static/uploads
-        backend_upload_path = os.path.join(os.path.dirname(__file__), "static", "uploads")
-        if os.path.exists(os.path.join(backend_upload_path, filename)):
-            return send_from_directory(backend_upload_path, filename)
-
-        # Fallback to project root static/uploads
-=======
         # Check backend/backend/static/uploads first
         backend_upload_path = os.path.join(os.path.dirname(__file__), "static", "uploads")
         if os.path.exists(os.path.join(backend_upload_path, filename)):
             return send_from_directory(backend_upload_path, filename)
         
         # Check project root static/uploads
->>>>>>> 3ab017413f8238ea2d422d2e2e182d669acb772a
         project_root = os.path.dirname(os.path.dirname(__file__))
         root_upload_path = os.path.join(project_root, "static", "uploads")
         if os.path.exists(os.path.join(root_upload_path, filename)):
             return send_from_directory(root_upload_path, filename)
-<<<<<<< HEAD
-
-=======
         
->>>>>>> 3ab017413f8238ea2d422d2e2e182d669acb772a
         return jsonify({"message": "File not found"}), 404
 
     # ================= JWT ERRORS =================
@@ -124,9 +103,4 @@ if __name__ == "__main__":
     upload_path = os.path.join(os.path.dirname(__file__), "static", "uploads")
     os.makedirs(upload_path, exist_ok=True)
 
-<<<<<<< HEAD
-    debug_mode = os.getenv("FLASK_DEBUG", "false").lower() == "true"
-    app.run(debug=debug_mode, host="0.0.0.0", port=5000)
-=======
     app.run(debug=True, host="0.0.0.0", port=5000)
->>>>>>> 3ab017413f8238ea2d422d2e2e182d669acb772a

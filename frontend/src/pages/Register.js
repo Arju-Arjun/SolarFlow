@@ -17,17 +17,11 @@ function Register() {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
 
-<<<<<<< HEAD
   // ✅ Handle input change
   const handleChange = (e) => {
     const { name, value } = e.target;
 
     // Mobile validation (only numbers, max 10 digits)
-=======
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-
->>>>>>> 3ab017413f8238ea2d422d2e2e182d669acb772a
     if (name === "mobile") {
       if (!/^\d*$/.test(value)) return;
       if (value.length > 10) return;
@@ -36,67 +30,40 @@ function Register() {
     setFormData({ ...formData, [name]: value });
   };
 
-<<<<<<< HEAD
-  // Timer effect
 
   // REGISTER
-=======
->>>>>>> 3ab017413f8238ea2d422d2e2e182d669acb772a
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setMessage("");
 
-<<<<<<< HEAD
     // ✅ Mobile validation
-=======
->>>>>>> 3ab017413f8238ea2d422d2e2e182d669acb772a
     if (formData.mobile.length !== 10) {
       setError("Mobile number must be exactly 10 digits.");
       return;
     }
 
-<<<<<<< HEAD
     // ✅ Password match check
-=======
->>>>>>> 3ab017413f8238ea2d422d2e2e182d669acb772a
     if (formData.password !== formData.confirmPassword) {
       setError("Passwords do not match.");
       return;
     }
 
-<<<<<<< HEAD
     // ✅ Password strength check
-=======
->>>>>>> 3ab017413f8238ea2d422d2e2e182d669acb772a
     if (formData.password.length < 6) {
       setError("Password must be at least 6 characters.");
       return;
     }
 
-<<<<<<< HEAD
     try {
-      await api.post("/auth/register", formData);
+      await api.post("/auth/register", {
+        ...formData
+      });
 
       setMessage("Registration successful. Redirecting to login...");
       setTimeout(() => navigate("/login"), 1200);
     } catch (err) {
       setError(err.response?.data?.message || "Registration failed.");
-=======
-    setLoading(true);
-    try {
-      await api.post("/auth/register", formData);
-      setMessage("Registration successful.");
-      setTimeout(() => navigate("/login"), 1200);
-    } catch (err) {
-      const serverMessage = err?.response?.data?.message || err?.response?.data?.error;
-      const fallback = typeof err?.response?.data === "string"
-        ? err.response.data
-        : err?.message || "Registration failed.";
-      setError(serverMessage || fallback);
-    } finally {
-      setLoading(false);
->>>>>>> 3ab017413f8238ea2d422d2e2e182d669acb772a
     }
   };
 
@@ -148,13 +115,7 @@ function Register() {
           {error && <div className="error">{error}</div>}
           {message && <div className="success">{message}</div>}
 
-<<<<<<< HEAD
           <button type="submit">Register</button>
-=======
-          <button type="submit" disabled={loading}>
-            {loading ? "Registering..." : "Register"}
-          </button>
->>>>>>> 3ab017413f8238ea2d422d2e2e182d669acb772a
         </form>
 
         <p>
