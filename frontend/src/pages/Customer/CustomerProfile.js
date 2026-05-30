@@ -44,6 +44,7 @@ const CustomerProfile = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [isEdit, setIsEdit] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const customerTabs = [
     { key: "profile", label: "Profile" },
@@ -509,8 +510,11 @@ useEffect(() => {
   // ==========================================
 
   const handleUpdate = async () => {
+    if (saving) return;
+
     if (!(await confirm("Save changes to this customer?"))) return;
 
+    setSaving(true);
     try {
       const formData = new FormData();
       Object.keys(customer).forEach((key) => {
@@ -523,6 +527,8 @@ useEffect(() => {
       setIsEdit(false);
       setProfileImage(null);
     } catch (err) {
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -1340,7 +1346,21 @@ return (
                     </div>
 
                     <div className="btn-group">
-                      <button className="save-btn" onClick={handleUpdate}>Save</button>
+                      <button
+                        className="save-btn"
+                        onClick={handleUpdate}
+                        disabled={saving}
+                        aria-disabled={saving}
+                      >
+                        {saving ? (
+                          <>
+                            <span className="loader"></span>
+                            Saving...
+                          </>
+                        ) : (
+                          "Save"
+                        )}
+                      </button>
                       <button className="cancel-btn" onClick={() => setIsEdit(false)}>Cancel</button>
                     </div>
                   </div>
