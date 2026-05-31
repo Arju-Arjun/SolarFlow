@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 
 const sectionDefinitions = [
@@ -373,15 +373,18 @@ const WorkflowDiagram = ({ workflowData = {}, customerId }) => {
   const navigate = useNavigate();
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
-  const handleNavigate = (stepKey) => {
-    if (!customerId) return;
+  const handleNavigate = useCallback(
+    (stepKey) => {
+      if (!customerId) return;
 
-    const path = routeTemplates[stepKey]
-      ? routeTemplates[stepKey](customerId)
-      : `/customer/${customerId}`;
+      const path = routeTemplates[stepKey]
+        ? routeTemplates[stepKey](customerId)
+        : `/customer/${customerId}`;
 
-    navigate(path);
-  };
+      navigate(path);
+    },
+    [customerId, navigate]
+  );
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
@@ -390,17 +393,21 @@ const WorkflowDiagram = ({ workflowData = {}, customerId }) => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const steps = sectionDefinitions.map((section) => ({
-    ...section,
-    complete: isSectionComplete(section, workflowData),
-    missingFields: getMissingFields(section, workflowData),
-  }));
+  const steps = useMemo(() =>
+    sectionDefinitions.map((section) => ({
+      ...section,
+      complete: isSectionComplete(section, workflowData),
+      missingFields: getMissingFields(section, workflowData),
+    })),
+    [workflowData]
+  );
 
-  const completedCount = steps.filter((step) => step.complete).length;
+  const completedCount = useMemo(() => steps.filter((s) => s.complete).length, [steps]);
 
-  const progressValue = steps.length
-    ? Math.round((completedCount / steps.length) * 100)
-    : 0;
+  const progressValue = useMemo(() =>
+    steps.length ? Math.round((completedCount / steps.length) * 100) : 0,
+    [steps.length, completedCount]
+  );
 
   return (
     <div className="workflow-container">
@@ -505,4 +512,4 @@ const WorkflowDiagram = ({ workflowData = {}, customerId }) => {
   );
 };
 
-export default WorkflowDiagram;
+export default React.memo(WorkflowDiagram);
