@@ -2148,9 +2148,7 @@ return (
         {activeTab === "installation" && (
           <div className="module-form">
             <div className="installation-container">
-              {installationLoading ? (
-                <p>Loading...</p>
-              ) : !installationEdit ? (
+              {!installationEdit ? (
                 <div>
                   <h2> INSTALLATION DETAILS</h2>
 
