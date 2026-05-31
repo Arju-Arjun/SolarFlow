@@ -1,5 +1,8 @@
 import { Link, useNavigate } from "react-router-dom";
 import { clearAuthToken, getAuthUser } from "../auth";
+import usePolling from "../hooks/usePolling";
+
+usePolling(loadDashboardData, 15000);
 
 function Dashboard() {
   const navigate = useNavigate();

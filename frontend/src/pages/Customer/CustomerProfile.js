@@ -17,6 +17,10 @@ import {
   serviceAPI,
 } from "../../api";
 import useConfirm from "../../hooks/useConfirm";
+import usePolling from "../../hooks/usePolling";
+
+usePolling(loadCustomerData, 10000);
+
 
 const getGoogleMapsUrl = (location) => {
   if (!location) return "#";
