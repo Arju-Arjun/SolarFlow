@@ -1819,10 +1819,7 @@ return (
                       <div className="mnre-form-group"><label>2nd Payment</label><input type="number" min="0" placeholder="000" value={loanDraft?.second_payment === 0 ? "" : loanDraft?.second_payment ?? ""} onChange={(e) => setLoanDraft({ ...loanDraft, second_payment: e.target.value === "" ? 0 : Number(e.target.value) })} /></div>
                     </div>
                   )}
-                  <div className="mnre-btn-group">
-                    {loanDraft?.enabled && <button className="mnre-save-btn" onClick={() => { handleLoanSave(); }} disabled={loanSaveLoading}>{loanSaveLoading ? "Saving..." :  "Save"}</button>}
-                    <button className="mnre-cancel-btn" onClick={() => { if (!loanDraft?.enabled) handleLoanSave(); setLoanDraft(null); setLoanEdit(false); }}>{loanDraft?.enabled ? "Cancel" : "Not Needed"}</button>
-                  </div>
+                <div className="mnre-btn-group">{loanDraft?.enabled && <button className="mnre-save-btn" onClick={() => { handleLoanSave(); }} disabled={loanSaveLoading}>{loanSaveLoading ? <><span className="spinner"></span> Saving...</> : "Save"}</button>}<button className="mnre-cancel-btn" onClick={() => { if (!loanDraft?.enabled) handleLoanSave(); setLoanDraft(null); setLoanEdit(false); }}>{loanDraft?.enabled ? "Cancel" : "Not Needed"}</button></div>
                 </div>
               )}
             </div>
@@ -2145,7 +2142,7 @@ return (
         {activeTab === "installation" && (
           <div className="module-form">
           <div className="installation-container">
-            {installationLoading ? <p>Loading...</p> : !installationEdit ? (
+            {installationLoading ? <p>Loading...<span className="spinner"></span></p> : !installationEdit ? (
               <div>
                 <h2> INSTALLATION DETAILS</h2>
 
