@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { FaHome, FaBars, FaTimes } from "react-icons/fa";
 import { FaLocationCrosshairs } from "react-icons/fa6";
@@ -17,7 +17,6 @@ import {
   serviceAPI,
 } from "../../api";
 import useConfirm from "../../hooks/useConfirm";
-import usePolling from "../../hooks/usePolling";
 
 const getGoogleMapsUrl = (location) => {
   if (!location) return "#";
@@ -274,7 +273,7 @@ const [deletedGeoImages, setDeletedGeoImages] = useState([]);
   // SIDE EFFECTS (useEffect)
   // ==========================================
 
-  const refreshCustomerData = async () => {
+  const refreshCustomerData = useCallback(async () => {
     if (isEditing) return;
     try {
       const res = await customersAPI.get(id);
@@ -282,9 +281,9 @@ const [deletedGeoImages, setDeletedGeoImages] = useState([]);
     } catch (err) {
       console.error(err);
     }
-  };
+  }, [id, isEditing]);
 
-  const refreshSiteVisitData = async () => {
+  const refreshSiteVisitData = useCallback(async () => {
     if (isEditing) return;
     try {
       const res = await siteVisitAPI.get(id);
@@ -292,9 +291,9 @@ const [deletedGeoImages, setDeletedGeoImages] = useState([]);
     } catch (err) {
       console.error(err);
     }
-  };
+  }, [id, isEditing]);
 
-  const refreshMnreData = async () => {
+  const refreshMnreData = useCallback(async () => {
     if (isEditing) return;
     try {
       const res = await mnreAPI.get(id);
@@ -302,9 +301,9 @@ const [deletedGeoImages, setDeletedGeoImages] = useState([]);
     } catch (err) {
       console.error(err);
     }
-  };
+  }, [id, isEditing]);
 
-  const refreshLoanData = async () => {
+  const refreshLoanData = useCallback(async () => {
     if (isEditing) return;
     try {
       const res = await loanAPI.get(id);
@@ -312,9 +311,9 @@ const [deletedGeoImages, setDeletedGeoImages] = useState([]);
     } catch (err) {
       console.error(err);
     }
-  };
+  }, [id, isEditing]);
 
-  const refreshPaymentData = async () => {
+  const refreshPaymentData = useCallback(async () => {
     if (isEditing) return;
     try {
       const res = await paymentAPI.get(id);
@@ -323,9 +322,9 @@ const [deletedGeoImages, setDeletedGeoImages] = useState([]);
     } catch (err) {
       console.error(err);
     }
-  };
+  }, [id, isEditing]);
 
-  const refreshKsebData = async () => {
+  const refreshKsebData = useCallback(async () => {
     if (isEditing) return;
     try {
       const res = await ksebAPI.get(id);
@@ -333,9 +332,9 @@ const [deletedGeoImages, setDeletedGeoImages] = useState([]);
     } catch (err) {
       console.error(err);
     }
-  };
+  }, [id, isEditing]);
 
-  const refreshKsebRegistrationData = async () => {
+  const refreshKsebRegistrationData = useCallback(async () => {
     if (isEditing) return;
     try {
       const res = await ksebRegistrationAPI.get(id);
@@ -343,9 +342,9 @@ const [deletedGeoImages, setDeletedGeoImages] = useState([]);
     } catch (err) {
       console.error(err);
     }
-  };
+  }, [id, isEditing]);
 
-  const refreshDcrData = async () => {
+  const refreshDcrData = useCallback(async () => {
     if (isEditing) return;
     try {
       const res = await dcrAPI.get(id);
@@ -353,9 +352,9 @@ const [deletedGeoImages, setDeletedGeoImages] = useState([]);
     } catch (err) {
       console.error(err);
     }
-  };
+  }, [id, isEditing]);
 
-  const refreshMaterialDeliveryData = async () => {
+  const refreshMaterialDeliveryData = useCallback(async () => {
     if (isEditing) return;
     try {
       const res = await materialDeliveryAPI.get(id);
@@ -363,9 +362,9 @@ const [deletedGeoImages, setDeletedGeoImages] = useState([]);
     } catch (err) {
       console.error(err);
     }
-  };
+  }, [id, isEditing]);
 
-  const refreshInstallationData = async () => {
+  const refreshInstallationData = useCallback(async () => {
     if (isEditing) return;
     try {
       const res = await installationAPI.get(id);
@@ -373,9 +372,9 @@ const [deletedGeoImages, setDeletedGeoImages] = useState([]);
     } catch (err) {
       console.error(err);
     }
-  };
+  }, [id, isEditing]);
 
-  const refreshServicesData = async () => {
+  const refreshServicesData = useCallback(async () => {
     if (isEditing || activeTab !== "service") return;
     try {
       const { data } = await serviceAPI.getServices(id);
@@ -383,9 +382,9 @@ const [deletedGeoImages, setDeletedGeoImages] = useState([]);
     } catch (err) {
       console.error(err);
     }
-  };
+  }, [id, isEditing, activeTab]);
 
-  const refreshMnreInstallationData = async () => {
+  const refreshMnreInstallationData = useCallback(async () => {
     if (isEditing || activeTab !== "mnre_installation") return;
     try {
       const res = await mnreAPI.getInstallation(id);
@@ -394,10 +393,11 @@ const [deletedGeoImages, setDeletedGeoImages] = useState([]);
     } catch (err) {
       console.error(err);
     }
-  };
+  }, [id, isEditing, activeTab]);
 
-  usePolling({
-    callback: async () => {
+  useEffect(() => {
+    if (isEditing) return;
+    const pollInterval = setInterval(async () => {
       await Promise.all([
         refreshCustomerData(),
         refreshSiteVisitData(),
@@ -412,11 +412,24 @@ const [deletedGeoImages, setDeletedGeoImages] = useState([]);
         refreshServicesData(),
         refreshMnreInstallationData(),
       ]);
-    },
-    delay: 10000,
-    pause: isEditing,
-    immediate: false,
-  });
+    }, 10000);
+
+    return () => clearInterval(pollInterval);
+  }, [
+    isEditing,
+    refreshCustomerData,
+    refreshSiteVisitData,
+    refreshMnreData,
+    refreshLoanData,
+    refreshPaymentData,
+    refreshKsebData,
+    refreshKsebRegistrationData,
+    refreshDcrData,
+    refreshMaterialDeliveryData,
+    refreshInstallationData,
+    refreshServicesData,
+    refreshMnreInstallationData,
+  ]);
 
   // Fetch Primary Customer Data
   useEffect(() => {
