@@ -63,7 +63,10 @@ function ForgotPassword() {
             />
             <button type="submit" disabled={loading || emailSent} style={{marginBottom: "20px"}}>
               {loading ? (
-                <span className="spinner-small"></span>
+                <>
+                  <span className="loader"></span>
+                  Sending...
+                </>
               ) : emailSent ? (
                 `${Math.floor(timeLeft / 60)}:${String(timeLeft % 60).padStart(2, "0")}`
               ) : (

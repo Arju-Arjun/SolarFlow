@@ -8,10 +8,13 @@ function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (loading) return;
     setError("");
+    setLoading(true);
 
     try {
       const response = await api.post("/auth/login", { email, password });
@@ -19,6 +22,8 @@ function Login() {
       navigate("/dashboard");
     } catch (err) {
       setError(err.response?.data?.message || "Login failed. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -32,7 +37,16 @@ function Login() {
           <label>Password</label>
           <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" required />
           {error && <div className="error">{error}</div>}
-          <button type="submit">Login</button>
+          <button type="submit" disabled={loading} aria-disabled={loading}>
+            {loading ? (
+              <>
+                <span className="loader"></span>
+                Logging in...
+              </>
+            ) : (
+              "Login"
+            )}
+          </button>
         </form>
         <p>
           <Link to="/forgot-password">Forgot Password?</Link>

@@ -34,6 +34,7 @@ function Register() {
   // REGISTER
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (loading) return;
     setError("");
     setMessage("");
 
@@ -55,6 +56,7 @@ function Register() {
       return;
     }
 
+    setLoading(true);
     try {
       await api.post("/auth/register", {
         ...formData
@@ -64,6 +66,8 @@ function Register() {
       setTimeout(() => navigate("/login"), 1200);
     } catch (err) {
       setError(err.response?.data?.message || "Registration failed.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -115,7 +119,16 @@ function Register() {
           {error && <div className="error">{error}</div>}
           {message && <div className="success">{message}</div>}
 
-          <button type="submit">Register</button>
+          <button type="submit" disabled={loading} aria-disabled={loading}>
+            {loading ? (
+              <>
+                <span className="loader"></span>
+                Registering...
+              </>
+            ) : (
+              "Register"
+            )}
+          </button>
         </form>
 
         <p>
