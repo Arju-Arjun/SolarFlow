@@ -1554,8 +1554,21 @@ return (
                   </div>
                 </div>
                 <div className="btn-group">
-                  <button className="save-btn" onClick={handleSiteSave} disabled={siteSaveLoading}>{siteSaveLoading ? "Saving..." : (siteVisit ? "Save" : "Create Site Visit")}</button>
-                  <button className="cancel-btn" onClick={() => { setSiteEdit(false); setSiteImages([]); setDeletedImages([]); setExistingImages(siteVisit?.images || []); fetchSiteVisitData(); }}>Cancel</button>
+                  <button
+  className="save-btn"
+  onClick={handleSiteSave}
+  disabled={siteSaveLoading}
+>
+  {siteSaveLoading ? (
+    <>
+      <span className="spinner"></span> Saving...
+    </>
+  ) : siteVisit ? (
+    "Save"
+  ) : (
+    "Create Site Visit"
+  )}
+</button>  <button className="cancel-btn" onClick={() => { setSiteEdit(false); setSiteImages([]); setDeletedImages([]); setExistingImages(siteVisit?.images || []); fetchSiteVisitData(); }}>Cancel</button>
                 </div>
               </div>
             )}
