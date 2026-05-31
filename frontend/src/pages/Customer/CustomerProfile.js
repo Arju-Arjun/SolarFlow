@@ -1151,18 +1151,15 @@ return (
         {/* ================= TAB MENU ================= */}
         {!isMobile && (
         <div className="tab-menu">
-          <button className={activeTab === "profile" ? "active" : ""} onClick={() => setActiveTab("profile")}>Profile</button>
-          <button className={activeTab === "site" ? "active" : ""} onClick={() => setActiveTab("site")}>Site Visit</button>
-          <button className={activeTab === "mnre" ? "active" : ""} onClick={() => setActiveTab("mnre")}>MNRE Profile</button>
-          <button className={activeTab === "payment" ? "active" : ""} onClick={() => setActiveTab("payment")}>Payment Flow</button>
-          <button className={activeTab === "loan" ? "active" : ""} onClick={() => setActiveTab("loan")}>Bank Loan</button>
-          <button className={activeTab === "kseb" ? "active" : ""} onClick={() => setActiveTab("kseb")}>KSEB</button>
-          <button className={activeTab === "material_delivery" ? "active" : ""} onClick={() => setActiveTab("material_delivery")}>Material Delivery</button>
-          <button className={activeTab === "installation" ? "active" : ""} onClick={() => setActiveTab("installation")}>Installation</button>
-          <button className={activeTab === "kseb_registration" ? "active" : ""} onClick={() => setActiveTab("kseb_registration")}>KSEB Registration & Commissioning</button>
-          <button className={activeTab === "dcr" ? "active" : ""} onClick={() => setActiveTab("dcr")}>DCR</button>
-          <button className={activeTab === "mnre_installation" ? "active" : ""} onClick={() => setActiveTab("mnre_installation")}>MNRE Installation Details</button>
-          <button className={activeTab === "service" ? "active" : ""} onClick={() => setActiveTab("service")}>Service</button>
+          {customerTabs.map((tab) => (
+            <button
+              key={tab.key}
+              className={activeTab === tab.key ? "active" : ""}
+              onClick={() => handleTabSelect(tab.key)}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
         )}
 
