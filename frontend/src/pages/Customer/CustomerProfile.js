@@ -1104,18 +1104,9 @@ const removeInstallationNewImage = (index) => {
 
  if (loading)
   return (
-    <div style={{
-      display: "flex",
-      justifyContent: "center",
-      alignItems: "center",
-      height: "70vh",
-      flexDirection: "column",
-      gap: "12px"
-    }}>
-      <div className="spinner"></div>
-      <p style={{ color: "#64748b", fontSize: "14px" }}>
-        Loading customer profile...
-      </p>
+    <div className="loading-overlay">
+      <div className="profile-spinner"></div>
+      <p>Loading customer profile...</p>
     </div>
   );
   if (error) return <h3 style={{ color: "red" }}>{error}</h3>;
