@@ -93,7 +93,7 @@ def create_or_update_kseb(customer_id):
 def get_Kseb(customer_id):
     kseb = Kseb.query.filter_by(customer_id=customer_id).first()
     if not kseb:
-        return jsonify({"error": "KSEB data not found for this customer"}), 404
+        return jsonify(None), 200
 
     return jsonify({
         "id": kseb.id,
@@ -138,7 +138,7 @@ def get_kseb_registration(customer_id):
     kseb_reg = KsebRegistration.query.filter_by(customer_id=customer_id).first()
     
     if not kseb_reg:
-        return jsonify({"error": "KSEB Registration data not found"}), 404
+        return jsonify(None), 200
 
     return jsonify(kseb_reg.to_dict()), 200
 
@@ -213,7 +213,7 @@ def get_dcr(customer_id):
     dcr = Dcr.query.filter_by(customer_id=customer_id).first()
     
     if not dcr:
-        return jsonify({"error": "DCR data not found"}), 404
+        return jsonify(None), 200
 
     return jsonify(dcr.to_dict()), 200
 
