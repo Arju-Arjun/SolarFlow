@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { FaHome, FaBars, FaTimes } from "react-icons/fa";
 import { FaLocationCrosshairs } from "react-icons/fa6";
@@ -102,18 +102,6 @@ const CustomerProfile = () => {
   const [locationDetected, setLocationDetected] = useState(false);
   const [locationLoading, setLocationLoading] = useState(false);
 
-  const [isEditing, setIsEditing] = useState(false);
-
-  const safeMergeState = (setState, data) => {
-    if (data == null) return;
-    setState((prev) => {
-      if (!prev || typeof prev !== "object" || Array.isArray(prev) || Array.isArray(data)) {
-        return data;
-      }
-      return { ...prev, ...data };
-    });
-  };
-
   // MNRE State
   const [mnreProfile, setMnreProfile] = useState(null);
   const [mnreEdit, setMnreEdit] = useState(false);
@@ -192,40 +180,6 @@ const CustomerProfile = () => {
     comments: ""
   });
 
-  useEffect(() => {
-    setIsEditing(
-      Boolean(
-        isEdit ||
-        siteEdit ||
-        mnreEdit ||
-        paymentEdit ||
-        loanEdit ||
-        ksebEdit ||
-        ksebRegistrationEdit ||
-        dcrEdit ||
-        materialDeliveryEdit ||
-        installationEdit ||
-        mnreInstallationEdit ||
-        serviceEditIndex !== null ||
-        serviceFormOpen
-      )
-    );
-  }, [
-    isEdit,
-    siteEdit,
-    mnreEdit,
-    paymentEdit,
-    loanEdit,
-    ksebEdit,
-    ksebRegistrationEdit,
-    dcrEdit,
-    materialDeliveryEdit,
-    installationEdit,
-    mnreInstallationEdit,
-    serviceEditIndex,
-    serviceFormOpen,
-  ]);
-
 
 
  // ==========================================
@@ -272,164 +226,6 @@ const [deletedGeoImages, setDeletedGeoImages] = useState([]);
   // ==========================================
   // SIDE EFFECTS (useEffect)
   // ==========================================
-
-  const refreshCustomerData = useCallback(async () => {
-    if (isEditing) return;
-    try {
-      const res = await customersAPI.get(id);
-      safeMergeState(setCustomer, res.data);
-    } catch (err) {
-      console.error(err);
-    }
-  }, [id, isEditing]);
-
-  const refreshSiteVisitData = useCallback(async () => {
-    if (isEditing) return;
-    try {
-      const res = await siteVisitAPI.get(id);
-      safeMergeState(setSiteVisit, res.data);
-    } catch (err) {
-      console.error(err);
-    }
-  }, [id, isEditing]);
-
-  const refreshMnreData = useCallback(async () => {
-    if (isEditing) return;
-    try {
-      const res = await mnreAPI.get(id);
-      safeMergeState(setMnreProfile, res.data);
-    } catch (err) {
-      console.error(err);
-    }
-  }, [id, isEditing]);
-
-  const refreshLoanData = useCallback(async () => {
-    if (isEditing) return;
-    try {
-      const res = await loanAPI.get(id);
-      safeMergeState(setLoanProfile, res.data);
-    } catch (err) {
-      console.error(err);
-    }
-  }, [id, isEditing]);
-
-  const refreshPaymentData = useCallback(async () => {
-    if (isEditing) return;
-    try {
-      const res = await paymentAPI.get(id);
-      safeMergeState(setPayment, res.data);
-      if (res.data?.images) setExistingPaymentImages(res.data.images);
-    } catch (err) {
-      console.error(err);
-    }
-  }, [id, isEditing]);
-
-  const refreshKsebData = useCallback(async () => {
-    if (isEditing) return;
-    try {
-      const res = await ksebAPI.get(id);
-      safeMergeState(setKsebProfile, res.data);
-    } catch (err) {
-      console.error(err);
-    }
-  }, [id, isEditing]);
-
-  const refreshKsebRegistrationData = useCallback(async () => {
-    if (isEditing) return;
-    try {
-      const res = await ksebRegistrationAPI.get(id);
-      safeMergeState(setKsebRegistration, res.data);
-    } catch (err) {
-      console.error(err);
-    }
-  }, [id, isEditing]);
-
-  const refreshDcrData = useCallback(async () => {
-    if (isEditing) return;
-    try {
-      const res = await dcrAPI.get(id);
-      safeMergeState(setDcr, res.data);
-    } catch (err) {
-      console.error(err);
-    }
-  }, [id, isEditing]);
-
-  const refreshMaterialDeliveryData = useCallback(async () => {
-    if (isEditing) return;
-    try {
-      const res = await materialDeliveryAPI.get(id);
-      safeMergeState(setMaterialDelivery, res.data);
-    } catch (err) {
-      console.error(err);
-    }
-  }, [id, isEditing]);
-
-  const refreshInstallationData = useCallback(async () => {
-    if (isEditing) return;
-    try {
-      const res = await installationAPI.get(id);
-      safeMergeState(setInstallation, res.data);
-    } catch (err) {
-      console.error(err);
-    }
-  }, [id, isEditing]);
-
-  const refreshServicesData = useCallback(async () => {
-    if (isEditing || activeTab !== "service") return;
-    try {
-      const { data } = await serviceAPI.getServices(id);
-      setServices(data);
-    } catch (err) {
-      console.error(err);
-    }
-  }, [id, isEditing, activeTab]);
-
-  const refreshMnreInstallationData = useCallback(async () => {
-    if (isEditing || activeTab !== "mnre_installation") return;
-    try {
-      const res = await mnreAPI.getInstallation(id);
-      if (res.status === 404) return;
-      safeMergeState(setMnreInstallation, res.data);
-    } catch (err) {
-      console.error(err);
-    }
-  }, [id, isEditing, activeTab]);
-
-  useEffect(() => {
-    if (isEditing) return;
-    const pollInterval = setInterval(async () => {
-      await Promise.all([
-        refreshCustomerData(),
-        refreshSiteVisitData(),
-        refreshMnreData(),
-        refreshLoanData(),
-        refreshPaymentData(),
-        refreshKsebData(),
-        refreshKsebRegistrationData(),
-        refreshDcrData(),
-        refreshMaterialDeliveryData(),
-        refreshInstallationData(),
-        refreshServicesData(),
-        refreshMnreInstallationData(),
-      ]);
-    }, 10000);
-
-    return () => clearInterval(pollInterval);
-  }, [
-    isEditing,
-    refreshCustomerData,
-    refreshSiteVisitData,
-    refreshMnreData,
-    refreshLoanData,
-    refreshPaymentData,
-    refreshKsebData,
-    refreshKsebRegistrationData,
-    refreshDcrData,
-    refreshMaterialDeliveryData,
-    refreshInstallationData,
-    refreshServicesData,
-    refreshMnreInstallationData,
-  ]);
 
   // Fetch Primary Customer Data
   useEffect(() => {
