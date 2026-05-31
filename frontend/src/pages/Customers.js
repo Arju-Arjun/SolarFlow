@@ -242,15 +242,10 @@ function Customers() {
   }, []);
 
   useEffect(() => {
-    let isMounted = true;
-    const POLL_INTERVAL_MS = 10000;
-
     const fetchData = async () => {
       try {
         const res = await customersAPI.list();
-        if (isMounted) {
-          setCustomers(res.data);
-        }
+        setCustomers(res.data);
       } catch (err) {
         console.log(
           "Error fetching customers:",
@@ -260,12 +255,6 @@ function Customers() {
     };
 
     fetchData();
-    const intervalId = setInterval(fetchData, POLL_INTERVAL_MS);
-
-    return () => {
-      isMounted = false;
-      clearInterval(intervalId);
-    };
   }, []);
 
   const handleCustomerSelect = async (customer) => {
