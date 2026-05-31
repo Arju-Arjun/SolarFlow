@@ -2412,96 +2412,43 @@ return (
         )}
 
         {/* ================= DCR TAB ================= */}
-      {activeTab === "dcr" && (
-  <div className="module-form">
-    <div className="dcr-container">
-      {dcrLoading ? <p>Loading...</p> : !dcrEdit ? (
-        <div>
-          <h2>DCR</h2>
-
-          {!dcr ? (
-            <div className="dcr-create-message">
-              <p>No data</p>
-              <button className="dcr-btn" onClick={() => { setDcrDraft({ certificate_received: false, certificate_claimed: false, certificate_sold: false, comments: "" }); setDcrEdit(true); }}>
-                Create DCR
-              </button>
-            </div>
-          ) : (
-            <>
-              <div className="dcr-grid">
-                <div className="dcr-item"><label>Certificate Received</label><span className={dcr?.certificate_received ? "status-yes" : "status-no"}>{dcr?.certificate_received ? "✓ Yes" : "✗ No"}</span></div>
-                <div className="dcr-item"><label>Certificate Claimed</label><span className={dcr?.certificate_claimed ? "status-yes" : "status-no"}>{dcr?.certificate_claimed ? "✓ Yes" : "✗ No"}</span></div>
-                <div className="dcr-item"><label>Certificate Sold</label><span className={dcr?.certificate_sold ? "status-yes" : "status-no"}>{dcr?.certificate_sold ? "✓ Yes" : "✗ No"}</span></div>
+        {activeTab === "dcr" && (
+          <div className="module-form">
+          <div className="dcr-container">
+            {dcrLoading ? <p>Loading...</p> : !dcrEdit ? (
+              <div>
+                <h2>DCR</h2>
+                {!dcr ? (
+                  <div className="dcr-create-message"><p>No data</p><button className="dcr-btn" onClick={() => { setDcrDraft({ certificate_received: false, certificate_claimed: false, certificate_sold: false, comments: "" }); setDcrEdit(true); }}>Create DCR</button></div>
+                ) : (
+                  <>
+                    <div className="dcr-grid">
+                      <div className="dcr-item"><label>Certificate Received</label><span className={dcr?.certificate_received ? "status-yes" : "status-no"}>{dcr?.certificate_received ? "✓ Yes" : "✗ No"}</span></div>
+                      <div className="dcr-item"><label>Certificate Claimed</label><span className={dcr?.certificate_claimed ? "status-yes" : "status-no"}>{dcr?.certificate_claimed ? "✓ Yes" : "✗ No"}</span></div>
+                      <div className="dcr-item"><label>Certificate Sold</label><span className={dcr?.certificate_sold ? "status-yes" : "status-no"}>{dcr?.certificate_sold ? "✓ Yes" : "✗ No"}</span></div>
+                    </div>
+                    {dcr?.comments && <div className="dcr-comments"><label>Comments:</label><p>{dcr.comments}</p></div>}
+                    <button className="dcr-btn" onClick={() => { setDcrDraft(dcr); setDcrEdit(true); }}>Update DCR</button>
+                  </>
+                )}
               </div>
-
-              {dcr?.comments && (
-                <div className="dcr-comments">
-                  <label>Comments:</label>
-                  <p>{dcr.comments}</p>
+            ) : (
+              <div>
+                <h2>Edit DCR</h2>
+                <div className="dcr-form">
+                  {['certificate_received', 'certificate_claimed', 'certificate_sold'].map(key => (
+                    <div className="dcr-toggle-group" key={key}><label className="dcr-toggle-label"><input type="checkbox" checked={dcrDraft?.[key] || false} onChange={(e) => setDcrDraft({ ...dcrDraft, [key]: e.target.checked })} /> <span>{key.replace(/_/g, ' ').toUpperCase()}</span></label></div>
+                  ))}
+                  <div className="dcr-textarea-group"><label>Comments</label><textarea value={dcrDraft?.comments || ""} onChange={(e) => setDcrDraft({ ...dcrDraft, comments: e.target.value })} rows="4" /></div>
+                  {dcrError && <p className="dcr-error">{dcrError}</p>}
                 </div>
-              )}
-
-              <button className="dcr-btn" onClick={() => { setDcrDraft(dcr); setDcrEdit(true); }}>
-                Update DCR
-              </button>
-            </>
-          )}
-        </div>
-      ) : (
-        <div>
-          <h2>Edit DCR</h2>
-
-          <div className="dcr-form">
-            {['certificate_received', 'certificate_claimed', 'certificate_sold'].map(key => (
-              <div className="dcr-toggle-group" key={key}>
-                <label className="dcr-toggle-label">
-                  <input
-                    type="checkbox"
-                    checked={dcrDraft?.[key] || false}
-                    onChange={(e) => setDcrDraft({ ...dcrDraft, [key]: e.target.checked })}
-                  />
-                  <span>{key.replace(/_/g, ' ').toUpperCase()}</span>
-                </label>
+                <div className="kseb-btn-group">
+                  <button className="kseb-save-btn" onClick={handleDcrSave} disabled={dcrLoading}>{dcrLoading ? <><span className="spinner"></span> Saving...</> : dcr?.id ? "Save" : "Create"}</button><button className="kseb-cancel-btn" onClick={() => { setDcrEdit(false); setDcrDraft(dcr); setDcrError(""); }}>Cancel</button></div>
               </div>
-            ))}
-
-            <div className="dcr-textarea-group">
-              <label>Comments</label>
-              <textarea
-                value={dcrDraft?.comments || ""}
-                onChange={(e) => setDcrDraft({ ...dcrDraft, comments: e.target.value })}
-                rows="4"
-              />
+            )}
             </div>
-
-            {dcrError && <p className="dcr-error">{dcrError}</p>}
           </div>
-
-          <div className="kseb-btn-group">
-            <button
-              className="kseb-save-btn"
-              onClick={handleDcrSave}
-              disabled={dcrLoading}
-            >
-              {dcrLoading ? (
-                <>
-                  <span className="spinner"></span> Saving...
-                </>
-              ) : dcr?.id ? "Save" : "Create"}
-            </button>
-
-            <button
-              className="kseb-cancel-btn"
-              onClick={() => { setDcrEdit(false); setDcrDraft(dcr); setDcrError(""); }}
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
-  </div>
-)}
+        )}
 
         {/* ================= MNRE INSTALLATION DETAILS TAB ================= */}
          {activeTab === "mnre_installation" && (
