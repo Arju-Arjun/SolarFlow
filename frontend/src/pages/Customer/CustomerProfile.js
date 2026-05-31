@@ -2147,233 +2147,239 @@ return (
         {/* ================= INSTALLATION TAB ================= */}
         {activeTab === "installation" && (
           <div className="module-form">
-          <div className="installation-container">
-            {installationLoading ? <div className="loading-overlay">
-              <div className="profile-spinner"></div>
-              <p>Loading customer profile...</p>
-            </div> : !installationEdit ? (
-              <div>
-                <h2> INSTALLATION DETAILS</h2>
+            <div className="installation-container">
+              {installationLoading ? (
+                <p>Loading...</p>
+              ) : !installationEdit ? (
+                <div>
+                  <h2> INSTALLATION DETAILS</h2>
 
-                {!installation ? (
-                  <div className="installation-create-message">
-                    <p>No Installation data found for this customer</p>
-                    <button
-                      className="installation-create-btn"
-                      onClick={() => {
-                        setInstallationDraft({
-                          electrical_installed: false,
-                          electrical_comments: "",
-                          structure_installed: false,
-                          structure_comments: "",
-                          geo_images: []
-                        });
-                        setExistingGeoImages([]);
-                        setDeletedGeoImages([]);
-                        setInstallationEdit(true);
-                      }}
-                    >
-                      Create Installation
-                    </button>
-                  </div>
-                ) : (
-                  <>
-                    <div className="installation-cards">
-                      <div className="installation-card">
-                        <div className="card-header">
-                          <h4>Electrical Installation</h4>
-                          <span className={`status-badge ${installation.electrical_installed ? 'completed' : 'pending'}`}>
-                            {installation.electrical_installed ? '✓ Installed' : '✗ Not Installed'}
+                  {!installation ? (
+                    <div className="installation-create-message">
+                      <p>No installation data found for this customer</p>
+                      <button
+                        className="kseb-edit-btn"
+                        onClick={() => {
+                          setInstallationDraft({
+                            electrical_installed: false,
+                            electrical_comments: "",
+                            structure_installed: false,
+                            structure_comments: "",
+                            geo_images: []
+                          });
+                          setExistingGeoImages([]);
+                          setDeletedGeoImages([]);
+                          setInstallationEdit(true);
+                        }}
+                      >
+                        Create Installation Details
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="installation-summary-grid">
+                        <div className="installation-summary-item">
+                          <label>Electrical Installation</label>
+                          <span className={installation.electrical_installed ? "status-yes" : "status-no"}>
+                            {installation.electrical_installed ? "✓ Yes" : "✗ No"}
                           </span>
                         </div>
-                        {installation.electrical_comments && (
-                          <p className="card-text">{installation.electrical_comments}</p>
-                        )}
-                      </div>
-
-                      <div className="installation-card">
-                        <div className="card-header">
-                          <h4>Structure Installation</h4>
-                          <span className={`status-badge ${installation.structure_installed ? 'completed' : 'pending'}`}>
-                            {installation.structure_installed ? '✓ Installed' : '✗ Not Installed'}
+                        <div className="installation-summary-item">
+                          <label>Structure Installation</label>
+                          <span className={installation.structure_installed ? "status-yes" : "status-no"}>
+                            {installation.structure_installed ? "✓ Yes" : "✗ No"}
                           </span>
                         </div>
-                        {installation.structure_comments && (
-                          <p className="card-text">{installation.structure_comments}</p>
-                        )}
                       </div>
+
+                      {installation.electrical_comments && (
+                        <div className="form-group">
+                          <label>Electrical Comments</label>
+                          <p>{installation.electrical_comments}</p>
+                        </div>
+                      )}
+
+                      {installation.structure_comments && (
+                        <div className="form-group">
+                          <label>Structure Comments</label>
+                          <p>{installation.structure_comments}</p>
+                        </div>
+                      )}
+
+                      {existingGeoImages.length > 0 && (
+                        <div className="installation-existing-images">
+                          <h5>Uploaded Geo Tagged Images</h5>
+                          <div className="installation-images-grid">
+                            {existingGeoImages.map((img, idx) => (
+                              <div key={`existing-${idx}`} className="installation-image-card">
+                                <img src={`${process.env.REACT_APP_BASE_URL}${img}`} alt={`Existing Image ${idx + 1}`} />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="installation-btn-group kseb-btn-group">
+                        <button
+                          className="kseb-save-btn"
+                          onClick={() => {
+                            setInstallationDraft({
+                              electrical_installed: installation.electrical_installed || false,
+                              electrical_comments: installation.electrical_comments || "",
+                              structure_installed: installation.structure_installed || false,
+                              structure_comments: installation.structure_comments || "",
+                              geo_images: null
+                            });
+                            setInstallationEdit(true);
+                          }}
+                        >
+                          Update Installation
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              ) : (
+                <div>
+                  <h2> INSTALLATION DETAILS</h2>
+                  <div className="installation-form">
+                    <div className="installation-section">
+                      <div className="installation-checkbox-group">
+                        <label className="installation-checkbox-label">
+                          <input
+                            type="checkbox"
+                            checked={installationDraft.electrical_installed || false}
+                            onChange={(e) => {
+                              setInstallationDraft({
+                                ...installationDraft,
+                                electrical_installed: e.target.checked,
+                                electrical_comments: e.target.checked ? installationDraft.electrical_comments : ""
+                              });
+                            }}
+                          />
+                          Electrical Installation
+                        </label>
+                      </div>
+                      {installationDraft.electrical_installed && (
+                        <div className="form-group">
+                          <label>Comments</label>
+                          <textarea
+                            placeholder="Enter electrical installation comments..."
+                            value={installationDraft.electrical_comments || ""}
+                            onChange={(e) => setInstallationDraft({ ...installationDraft, electrical_comments: e.target.value })}
+                            rows="3"
+                          />
+                        </div>
+                      )}
                     </div>
 
-                    {installation.geo_images && installation.geo_images.length > 0 && (
-                      <div className="installation-images-section">
-                        <h4>Geo Tagged Images</h4>
-                        <div className="installation-images-grid">
-                          {installation.geo_images.map((img, idx) => (
-                            <div key={idx} className="installation-image-card">
-                              <img src={`${process.env.REACT_APP_BASE_URL}${img}`} alt={`Geo Image ${idx + 1}`} />
-                            </div>
-                          ))}
-                        </div>
+                    <div className="installation-section">
+                      <div className="installation-checkbox-group">
+                        <label className="installation-checkbox-label">
+                          <input
+                            type="checkbox"
+                            checked={installationDraft.structure_installed || false}
+                            onChange={(e) => {
+                              setInstallationDraft({
+                                ...installationDraft,
+                                structure_installed: e.target.checked,
+                                structure_comments: e.target.checked ? installationDraft.structure_comments : ""
+                              });
+                            }}
+                          />
+                          Structure Installation
+                        </label>
                       </div>
-                    )}
+                      {installationDraft.structure_installed && (
+                        <div className="form-group">
+                          <label>Comments</label>
+                          <textarea
+                            placeholder="Enter structure installation comments..."
+                            value={installationDraft.structure_comments || ""}
+                            onChange={(e) => setInstallationDraft({ ...installationDraft, structure_comments: e.target.value })}
+                            rows="3"
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="installation-images-section">
+                      <h4>Geo Tagged Images</h4>
+
+                      {existingGeoImages.length > 0 && (
+                        <div className="installation-existing-images">
+                          <h5>Uploaded Images</h5>
+                          <div className="installation-images-grid">
+                            {existingGeoImages.map((img, idx) => (
+                              <div key={`existing-${idx}`} className="installation-image-card">
+                                <img src={`${process.env.REACT_APP_BASE_URL}${img}`} alt={`Existing Image ${idx + 1}`} />
+                                <button
+                                  type="button"
+                                  className="installation-remove-btn"
+                                  onClick={() => {
+                                    setExistingGeoImages(existingGeoImages.filter((_, i) => i !== idx));
+                                    setDeletedGeoImages([...deletedGeoImages, img]);
+                                  }}
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="form-group">
+                        <label>Upload Images</label>
+                        <input
+                          type="file"
+                          multiple
+                          accept="image/*"
+                          onChange={(e) => {
+                            const files = Array.from(e.target.files || []);
+                            setInstallationDraft({
+                              ...installationDraft,
+                              geo_images: files.length > 0 ? files : null
+                            });
+                          }}
+                        />
+                      </div>
+
+                      {installationDraft.geo_images && installationDraft.geo_images.length > 0 && (
+                        <div className="installation-new-images">
+                          <h5>New Images</h5>
+                          <div className="installation-images-grid">
+                            {Array.from(installationDraft.geo_images).map((file, idx) => (
+                              <div key={`new-${idx}`} className="installation-image-card">
+                                <img src={URL.createObjectURL(file)} alt={`New Image ${idx + 1}`} />
+                                <span className="installation-file-name">{file.name}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
 
                     <div className="installation-btn-group kseb-btn-group">
-                      <button className="kseb-edit-btn" onClick={() => {
+                      <button className="kseb-save-btn" onClick={handleInstallationSave} disabled={installationLoading}>{installationLoading ? <><span className="spinner"></span> Saving...</> : "Save"}</button>
+                      <button className="kseb-cancel-btn" onClick={() => {
+                        setInstallationEdit(false);
                         setInstallationDraft({
-                          electrical_installed: installation.electrical_installed || false,
-                          electrical_comments: installation.electrical_comments || "",
-                          structure_installed: installation.structure_installed || false,
-                          structure_comments: installation.structure_comments || "",
+                          electrical_installed: installation?.electrical_installed || false,
+                          electrical_comments: installation?.electrical_comments || "",
+                          structure_installed: installation?.structure_installed || false,
+                          structure_comments: installation?.structure_comments || "",
                           geo_images: null
                         });
-                        setExistingGeoImages(installation.geo_images || []);
+                        setExistingGeoImages(installation?.geo_images || []);
                         setDeletedGeoImages([]);
-                        setInstallationEdit(true);
-                      }}>Update Installation</button>
+                      }}>Cancel</button>
                     </div>
-                  </>
-                )}
-              </div>
-            ) : (
-              <div>
-                <h2> INSTALLATION DETAILS</h2>
-                <div className="installation-form">
-                  <div className="installation-section">
-                    <div className="installation-checkbox-group">
-                      <label className="installation-checkbox-label">
-                        <input
-                          type="checkbox"
-                          checked={installationDraft.electrical_installed || false}
-                          onChange={(e) => {
-                            setInstallationDraft({
-                              ...installationDraft,
-                              electrical_installed: e.target.checked,
-                              electrical_comments: e.target.checked ? installationDraft.electrical_comments : ""
-                            });
-                          }}
-                        />
-                        Electrical Installation
-                      </label>
-                    </div>
-                    {installationDraft.electrical_installed && (
-                      <div className="form-group">
-                        <label>Comments</label>
-                        <textarea
-                          placeholder="Enter electrical installation comments..."
-                          value={installationDraft.electrical_comments || ""}
-                          onChange={(e) => setInstallationDraft({ ...installationDraft, electrical_comments: e.target.value })}
-                          rows="3"
-                        />
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="installation-section">
-                    <div className="installation-checkbox-group">
-                      <label className="installation-checkbox-label">
-                        <input
-                          type="checkbox"
-                          checked={installationDraft.structure_installed || false}
-                          onChange={(e) => {
-                            setInstallationDraft({
-                              ...installationDraft,
-                              structure_installed: e.target.checked,
-                              structure_comments: e.target.checked ? installationDraft.structure_comments : ""
-                            });
-                          }}
-                        />
-                        Structure Installation
-                      </label>
-                    </div>
-                    {installationDraft.structure_installed && (
-                      <div className="form-group">
-                        <label>Comments</label>
-                        <textarea
-                          placeholder="Enter structure installation comments..."
-                          value={installationDraft.structure_comments || ""}
-                          onChange={(e) => setInstallationDraft({ ...installationDraft, structure_comments: e.target.value })}
-                          rows="3"
-                        />
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="installation-images-section">
-                    <h4>Geo Tagged Images</h4>
-                    
-                    {existingGeoImages.length > 0 && (
-                      <div className="installation-existing-images">
-                        <h5>Uploaded Images</h5>
-                        <div className="installation-images-grid">
-                          {existingGeoImages.map((img, idx) => (
-                            <div key={`existing-${idx}`} className="installation-image-card">
-                              <img src={`${process.env.REACT_APP_BASE_URL}${img}`} alt={`Existing Image ${idx + 1}`} />
-                              <button
-                                type="button"
-                                className="installation-remove-btn"
-                                onClick={() => {
-                                  setExistingGeoImages(existingGeoImages.filter((_, i) => i !== idx));
-                                  setDeletedGeoImages([...deletedGeoImages, img]);
-                                }}
-                              >
-                                ✕
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="form-group">
-                      <label>Upload Images</label>
-                      <input
-                        type="file"
-                        multiple
-                        accept="image/*"
-                        onChange={(e) => {
-                          const files = Array.from(e.target.files || []);
-                          setInstallationDraft({
-                            ...installationDraft,
-                            geo_images: files.length > 0 ? files : null
-                          });
-                        }}
-                      />
-                    </div>
-
-                    {installationDraft.geo_images && installationDraft.geo_images.length > 0 && (
-                      <div className="installation-new-images">
-                        <h5>New Images</h5>
-                        <div className="installation-images-grid">
-                          {Array.from(installationDraft.geo_images).map((file, idx) => (
-                            <div key={`new-${idx}`} className="installation-image-card">
-                              <img src={URL.createObjectURL(file)} alt={`New Image ${idx + 1}`} />
-                              <span className="installation-file-name">{file.name}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="installation-btn-group kseb-btn-group">
-                   <button className="kseb-save-btn" onClick={handleInstallationSave} disabled={installationLoading}>{installationLoading ? <><span className="spinner"></span> Saving...</> : "Save"}</button>
-                    <button className="kseb-cancel-btn" onClick={() => {
-                      setInstallationEdit(false);
-                      setInstallationDraft({
-                        electrical_installed: installation?.electrical_installed || false,
-                        electrical_comments: installation?.electrical_comments || "",
-                        structure_installed: installation?.structure_installed || false,
-                        structure_comments: installation?.structure_comments || "",
-                        geo_images: null
-                      });
-                      setExistingGeoImages(installation?.geo_images || []);
-                      setDeletedGeoImages([]);
-                    }}>Cancel</button>
                   </div>
                 </div>
-              </div>
-            )}
-          </div></div>
+              )}
+            </div>
+          </div>
         )}
 
             
