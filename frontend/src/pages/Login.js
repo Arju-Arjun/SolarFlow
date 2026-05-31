@@ -12,7 +12,6 @@ function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (loading) return;
     setError("");
     setLoading(true);
 
@@ -22,7 +21,6 @@ function Login() {
       navigate("/dashboard");
     } catch (err) {
       setError(err.response?.data?.message || "Login failed. Please try again.");
-    } finally {
       setLoading(false);
     }
   };
@@ -37,15 +35,8 @@ function Login() {
           <label>Password</label>
           <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" required />
           {error && <div className="error">{error}</div>}
-          <button type="submit" disabled={loading} aria-disabled={loading}>
-            {loading ? (
-              <>
-                <span className="loader"></span>
-                Logging in...
-              </>
-            ) : (
-              "Login"
-            )}
+          <button type="submit" disabled={loading}>
+            {loading ? "⏳ Processing..." : "Login"}
           </button>
         </form>
         <p>

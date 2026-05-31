@@ -9,20 +9,17 @@ function ResetPassword() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (loading) return;
     setError("");
     setMessage("");
-    
+
     if (password !== confirmPassword) {
       setError("Passwords must match.");
       return;
     }
 
-    setLoading(true);
     try {
       const response = await api.post("/auth/reset-password", {
         token,
@@ -32,8 +29,6 @@ function ResetPassword() {
       setMessage(response.data.message);
     } catch (err) {
       setError(err.response?.data?.message || "Unable to reset password.");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -48,16 +43,7 @@ function ResetPassword() {
           <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
           {error && <div className="error">{error}</div>}
           {message && <div className="success">{message}</div>}
-          <button type="submit" disabled={loading} aria-disabled={loading}>
-            {loading ? (
-              <>
-                <span className="loader"></span>
-                Resetting...
-              </>
-            ) : (
-              "Reset Password"
-            )}
-          </button>
+          <button type="submit">Reset Password</button>
         </form>
         <p>
           Back to <Link to="/login">Login</Link>
