@@ -148,7 +148,7 @@ function Customers() {
                         color: "blue",
                       }}
                     >
-                      {c.current_status || "Pending"}
+                      {c.current_status || "View"}
                     </td>
                   </tr>
 
