@@ -3,9 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { customersAPI, workflowAPI } from "../api";
 import WorkflowDiagram from "../components/WorkflowDiagram";
 import { FaHome } from "react-icons/fa";
-import usePolling from "../hooks/usePolling";
-
-usePolling(fetchCustomers, 10000);
 
 function Customers() {
   const [customers, setCustomers] = useState([]);
