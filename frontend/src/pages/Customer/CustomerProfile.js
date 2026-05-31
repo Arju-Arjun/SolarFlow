@@ -1357,7 +1357,7 @@ return (
                     </div>
 
                     <div className="btn-group">
-                      <button className="save-btn" onClick={handleUpdate} disabled={profileSaveLoading}>{profileSaveLoading ? "Saving..." : "Save"}</button>
+                      <button className="save-btn" onClick={handleUpdate} disabled={profileSaveLoading}>{profileSaveLoading ? <><span className="spinner"></span> Saving...</> : "Save"}</button>
                       <button className="cancel-btn" onClick={() => setIsEdit(false)}>Cancel</button>
                     </div>
                   </div>
@@ -1554,21 +1554,8 @@ return (
                   </div>
                 </div>
                 <div className="btn-group">
-                  <button
-  className="save-btn"
-  onClick={handleSiteSave}
-  disabled={siteSaveLoading}
->
-  {siteSaveLoading ? (
-    <>
-      <span className="spinner"></span> Saving...
-    </>
-  ) : siteVisit ? (
-    "Save"
-  ) : (
-    "Create Site Visit"
-  )}
-</button>  <button className="cancel-btn" onClick={() => { setSiteEdit(false); setSiteImages([]); setDeletedImages([]); setExistingImages(siteVisit?.images || []); fetchSiteVisitData(); }}>Cancel</button>
+                  <button className="save-btn" onClick={handleSiteSave} disabled={siteSaveLoading}>{siteSaveLoading ? <><span className="spinner"></span> Saving...</> : siteVisit ? "Save" : "Create Site Visit"}</button>
+                  <button className="cancel-btn" onClick={() => { setSiteEdit(false); setSiteImages([]); setDeletedImages([]); setExistingImages(siteVisit?.images || []); fetchSiteVisitData(); }}>Cancel</button>
                 </div>
               </div>
             )}
@@ -1735,7 +1722,8 @@ return (
                         </div>
                       </div>
                       <div className="btn-group">
-                        <button className="save-btn" onClick={() => { handlePaymentSave(); setDeletedPaymentImages([]); }} disabled={paymentSaveLoading}>{paymentSaveLoading ? "Saving..." : "Save"}</button>
+                        <button className="save-btn" onClick={() => { handlePaymentSave(); setDeletedPaymentImages([]); }} disabled={paymentSaveLoading}>{paymentSaveLoading ? <><span className="spinner"></span> Saving...</> : "Save"}</button>
+                       
                         <button className="cancel-btn" onClick={handlePaymentCancel}>Cancel</button>
                       </div>
                     </div>
@@ -1972,8 +1960,7 @@ return (
 
                 <div className="kseb-box"><div className="kseb-header"><label><input type="checkbox" checked={ksebDraft.feasibility} onChange={(e) => setKsebDraft({ ...ksebDraft, feasibility: e.target.checked })} /> Feasibility Request Submitted</label></div></div>
                 <div className="kseb-box"><div className="kseb-header"><label><input type="checkbox" checked={ksebDraft.fee_paid} onChange={(e) => setKsebDraft({ ...ksebDraft, fee_paid: e.target.checked })} /> Fee Paid</label></div></div>
-                <div className="kseb-btn-group"><button className="kseb-save-btn" onClick={handleKsebSave} disabled={ksebSaveLoading}>{ksebSaveLoading ? "Saving..." : "Save"}</button><button className="kseb-cancel-btn" onClick={() => setKsebEdit(false)}>Cancel</button></div>
-              </div>
+               <div className="kseb-btn-group"><button className="kseb-save-btn" onClick={handleKsebSave} disabled={ksebSaveLoading}>{ksebSaveLoading ? <><span className="spinner"></span> Saving...</> : "Save"}</button><button className="kseb-cancel-btn" onClick={() => setKsebEdit(false)}>Cancel</button></div></div>
             )}
           </div>
           </div>
@@ -2144,9 +2131,7 @@ return (
                   </div>
 
                   <div className="material-delivery-btn-group kseb-btn-group">
-                    <button className="kseb-save-btn" onClick={handleMaterialDeliverySave} disabled={materialDeliveryLoading}>
-                      {materialDeliveryLoading ? "Saving..." : "Save"}
-                    </button>
+                    <button className="kseb-save-btn" onClick={handleMaterialDeliverySave} disabled={materialDeliveryLoading}>{materialDeliveryLoading ? <><span className="spinner"></span> Saving...</> : "Save"}</button>
                     <button className="kseb-cancel-btn" onClick={handleMaterialDeliveryCancel}>Cancel</button>
                   </div>
                 </div>
@@ -2365,9 +2350,7 @@ return (
                   </div>
 
                   <div className="installation-btn-group kseb-btn-group">
-                    <button className="kseb-save-btn" onClick={handleInstallationSave} disabled={installationLoading}>
-                      {installationLoading ? "Saving..." : "Save"}
-                    </button>
+                   <button className="kseb-save-btn" onClick={handleInstallationSave} disabled={installationLoading}>{installationLoading ? <><span className="spinner"></span> Saving...</> : "Save"}</button>
                     <button className="kseb-cancel-btn" onClick={() => {
                       setInstallationEdit(false);
                       setInstallationDraft({
@@ -2425,8 +2408,7 @@ return (
                   <div className="kseb-registration-textarea-group"><label>Comments</label><textarea value={ksebRegistrationDraft?.comments || ""} onChange={(e) => setKsebRegistrationDraft({ ...ksebRegistrationDraft, comments: e.target.value })} rows="4" /></div>
                   {ksebRegistrationError && <p className="kseb-registration-error">{ksebRegistrationError}</p>}
                 </div>
-                <div className="kseb-btn-group"><button className="kseb-save-btn" onClick={handleKsebRegistrationSave} disabled={ksebRegistrationLoading}>{ksebRegistrationLoading ? "Saving..." : ksebRegistration?.id ? "Save" : "Create"}</button><button className="kseb-cancel-btn" onClick={() => { setKsebRegistrationEdit(false); setKsebRegistrationDraft(ksebRegistration); setKsebRegistrationError(""); }}>Cancel</button></div>
-              </div>
+               <div className="kseb-btn-group"><button className="kseb-save-btn" onClick={handleKsebRegistrationSave} disabled={ksebRegistrationLoading}>{ksebRegistrationLoading ? <><span className="spinner"></span> Saving...</> : ksebRegistration?.id ? "Save" : "Create"}</button><button className="kseb-cancel-btn" onClick={() => { setKsebRegistrationEdit(false); setKsebRegistrationDraft(ksebRegistration); setKsebRegistrationError(""); }}>Cancel</button></div>  </div>
             )}
           </div>
           </div>
@@ -2463,7 +2445,8 @@ return (
                   <div className="dcr-textarea-group"><label>Comments</label><textarea value={dcrDraft?.comments || ""} onChange={(e) => setDcrDraft({ ...dcrDraft, comments: e.target.value })} rows="4" /></div>
                   {dcrError && <p className="dcr-error">{dcrError}</p>}
                 </div>
-                <div className="kseb-btn-group"><button className="kseb-save-btn" onClick={handleDcrSave} disabled={dcrLoading}>{dcrLoading ? "Saving..." : dcr?.id ? "Save" : "Create"}</button><button className="kseb-cancel-btn" onClick={() => { setDcrEdit(false); setDcrDraft(dcr); setDcrError(""); }}>Cancel</button></div>
+                <div className="kseb-btn-group">
+                  <button className="kseb-save-btn" onClick={handleDcrSave} disabled={dcrLoading}>{dcrLoading ? <><span className="spinner"></span> Saving...</> : dcr?.id ? "Save" : "Create"}</button><button className="kseb-cancel-btn" onClick={() => { setDcrEdit(false); setDcrDraft(dcr); setDcrError(""); }}>Cancel</button></div>
               </div>
             )}
             </div>
@@ -2682,13 +2665,7 @@ return (
                 </button>
               ) : (
                 <>
-                  <button
-                    className="mnre-save-btn"
-                    onClick={handleMnreInstallationSave}
-                    disabled={mnreInstallationSaveLoading}
-                  >
-                    {mnreInstallationSaveLoading ? "Saving..." : "Save"}
-                  </button>
+                 <button className="mnre-save-btn" onClick={handleMnreInstallationSave} disabled={mnreInstallationSaveLoading}>{mnreInstallationSaveLoading ? <><span className="spinner"></span> Saving...</> : "Save"}</button>
                   <button
                     className="mnre-cancel-btn"
                     onClick={() => {
@@ -2732,8 +2709,7 @@ return (
                   {serviceForm.images.map((img, i) => <div className="img-box" key={i}><img src={URL.createObjectURL(img)} alt="" /><span onClick={() => removeServiceNewImage(i)}>❌</span></div>)}
                 </div>
                 <textarea placeholder="Comments" value={serviceForm.comments} onChange={(e) => setServiceForm({ ...serviceForm, comments: e.target.value })} />
-                <div className="form-actions"><button onClick={handleServiceSave} disabled={serviceSaveLoading}>{serviceSaveLoading ? "Saving..." : "Save"}</button><button onClick={() => setServiceFormOpen(false)}>Cancel</button></div>
-              </div>
+               <div className="form-actions"><button onClick={handleServiceSave} disabled={serviceSaveLoading}>{serviceSaveLoading ? <><span className="spinner"></span> Saving...</> : "Save"}</button><button onClick={() => setServiceFormOpen(false)}>Cancel</button></div>     </div>
             )}
           </div>
         )}
