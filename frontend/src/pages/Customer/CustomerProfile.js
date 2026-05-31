@@ -1161,7 +1161,7 @@ return (
                           ? URL.createObjectURL(profileImage)
                           : customer?.profile_photo
                             ? `${process.env.REACT_APP_BASE_URL}${customer.profile_photo}`
-                            : "https://via.placeholder.com/150"
+                            : `${process.env.REACT_APP_BASE_URL}backend/static/profile_photo/default.png`
                       }
                   alt="profile"
                 />

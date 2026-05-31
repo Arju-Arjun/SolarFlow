@@ -28,8 +28,8 @@ instance/
 
 # Uploads
 
-uploads/
-backend/uploads/
+# uploads/
+# backend/uploads/
 
 # =========================
 
