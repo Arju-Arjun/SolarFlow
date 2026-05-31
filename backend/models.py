@@ -6,8 +6,8 @@ import json
 # =========================
 # CONSTANTS
 # =========================
-UPLOAD_FOLDER = "backend/static/profile_photo"
-DEFAULT_IMAGE = "https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg"
+UPLOAD_FOLDER = "backend/static/uploads/profile_photo"
+DEFAULT_IMAGE = "/backend/static/uploads/profile_photo/default.png"
 
 
 # =========================
@@ -79,7 +79,7 @@ class Customer(db.Model):
     # ================= SAFE IMAGE HANDLING =================
     def get_safe_image(self):
         if self.profile_photo:
-            filename = self.profile_photo.replace("/backend/static/profile_photo", "")
+            filename = self.profile_photo.replace("/backend/static/uploads/profile_photo", "")
             full_path = os.path.join(UPLOAD_FOLDER, filename)
 
             if os.path.exists(full_path):
