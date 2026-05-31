@@ -5,7 +5,13 @@ function Dashboard() {
   const navigate = useNavigate();
 
   const logout = () => {
+    // ✅ clear all auth data
     clearAuthToken();
+
+    // optional safety cleanup
+    localStorage.removeItem("spm_token");
+    localStorage.removeItem("spm_user");
+
     navigate("/login");
   };
 
@@ -16,7 +22,9 @@ function Dashboard() {
 
       <div className="dashboard-header">
         <h1>Solar Project Manager</h1>
-        <p>Welcome, {user?.name || "User"}</p>
+        <p>
+          Welcome, {user?.name ? user.name : "User"}
+        </p>
       </div>
 
       <div className="grid-two">

@@ -11,13 +11,19 @@ export function clearAuthToken() {
 export function getAuthUser() {
   const raw = localStorage.getItem("spm_user");
   if (!raw) return null;
+
   try {
     return JSON.parse(raw);
-  } catch {
+  } catch (err) {
+    console.error("Invalid user data in storage");
     return null;
   }
 }
 
 export function isAuthenticated() {
-  return Boolean(localStorage.getItem("spm_token"));
+  return !!localStorage.getItem("spm_token");
+}
+
+export function getToken() {
+  return localStorage.getItem("spm_token");
 }
