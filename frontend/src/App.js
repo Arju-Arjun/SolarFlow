@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import "./mobile.css";
+import { isAuthenticated } from "./auth";
 
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -12,19 +13,52 @@ import CustomerProfile from "./pages/Customer/CustomerProfile";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 
+const AuthRedirect = () =>
+  isAuthenticated() ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />;
+
+const PublicRoute = ({ children }) =>
+  isAuthenticated() ? <Navigate to="/dashboard" replace /> : children;
+
 function App() {
   return (
     <BrowserRouter>
       <Routes>
 
-        {/* Public routes */}
-        <Route path="/" element={<Navigate to="/login" replace />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/" element={<AuthRedirect />} />
 
-        {/* Protected routes */}
+        <Route
+          path="/login"
+          element={
+            <PublicRoute>
+              <Login />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/register"
+          element={
+            <PublicRoute>
+              <Register />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/forgot-password"
+          element={
+            <PublicRoute>
+              <ForgotPassword />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/reset-password"
+          element={
+            <PublicRoute>
+              <ResetPassword />
+            </PublicRoute>
+          }
+        />
+
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/customers/add" element={<CustomerForm />} />
