@@ -44,7 +44,6 @@ const CustomerProfile = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [isEdit, setIsEdit] = useState(false);
-  const [profileUpdateLoading, setProfileUpdateLoading] = useState(false);
 
   const customerTabs = [
     { key: "profile", label: "Profile" },
@@ -180,8 +179,15 @@ const CustomerProfile = () => {
     existingImages: [],
     comments: ""
   });
+  const [serviceSaveLoading, setServiceSaveLoading] = useState(false);
 
-
+  // Loading States for Save Operations
+  const [profileSaveLoading, setProfileSaveLoading] = useState(false);
+  const [siteSaveLoading, setSiteSaveLoading] = useState(false);
+  const [mnreSaveLoading, setMnreSaveLoading] = useState(false);
+  const [paymentSaveLoading, setPaymentSaveLoading] = useState(false);
+  const [loanSaveLoading, setLoanSaveLoading] = useState(false);
+  const [ksebSaveLoading, setKsebSaveLoading] = useState(false);
 
  // ==========================================
  // Installation State
@@ -512,8 +518,8 @@ useEffect(() => {
   const handleUpdate = async () => {
     if (!(await confirm("Save changes to this customer?"))) return;
 
-    setProfileUpdateLoading(true);
     try {
+      setProfileSaveLoading(true);
       const formData = new FormData();
       Object.keys(customer).forEach((key) => {
         if (customer[key]) formData.append(key, customer[key]);
@@ -526,7 +532,7 @@ useEffect(() => {
       setProfileImage(null);
     } catch (err) {
     } finally {
-      setProfileUpdateLoading(false);
+      setProfileSaveLoading(false);
     }
   };
 
@@ -625,6 +631,7 @@ const handleLocationAutoFill = async () => {
     if (!(await confirm(siteVisit?.id ? "Save site visit updates?" : "Create this site visit record?"))) return;
 
     try {
+      setSiteSaveLoading(true);
       const token = localStorage.getItem("spm_token");
       const formData = new FormData();
       formData.append("customer_id", id);
@@ -649,7 +656,7 @@ const handleLocationAutoFill = async () => {
       setSiteImages([]);
       setDeletedImages([]);
       fetchSiteVisitData();
-    } catch (err) { }
+    } catch (err) { } finally { setSiteSaveLoading(false); }
   };
 
   // ==========================================
@@ -659,6 +666,7 @@ const handleLocationAutoFill = async () => {
   const handleMnreSave = async () => {
     if (!(await confirm(mnreProfile?.id ? "Save MNRE profile changes?" : "Create a new MNRE profile?"))) return;
     try {
+      setMnreSaveLoading(true);
       const token = localStorage.getItem("spm_token");
       const formData = new FormData();
       formData.append("customer_id", id);
@@ -675,7 +683,7 @@ const handleLocationAutoFill = async () => {
       setMnreProfile(response.data);
       setMnreDraft(null);
       setMnreEdit(false);
-    } catch (err) { }
+    } catch (err) { } finally { setMnreSaveLoading(false); }
   };
 
   const handleMnreInstallationSave = async () => {
@@ -727,6 +735,7 @@ const handleLocationAutoFill = async () => {
   const handlePaymentSave = async () => {
     if (!(await confirm(payment?.id ? "Save payment changes?" : "Create this payment record?"))) return;
     try {
+      setPaymentSaveLoading(true);
       const token = localStorage.getItem("spm_token");
       const formData = new FormData();
       formData.append("customer_id", id);
@@ -748,7 +757,7 @@ const handleLocationAutoFill = async () => {
       setPaymentImages([]);
       setDeletedPaymentImages([]);
       setExistingPaymentImages(data.payment.images || []);
-    } catch (err) { }
+    } catch (err) { } finally { setPaymentSaveLoading(false); }
   };
 
   const handlePaymentCancel = () => {
@@ -786,6 +795,7 @@ const handleLocationAutoFill = async () => {
   const handleLoanSave = async () => {
     if (!(await confirm(loanDraft?.id ? "Save loan details?" : "Create loan information?"))) return;
     try {
+      setLoanSaveLoading(true);
       const formData = new FormData();
       const payload = {
         enabled: loanDraft?.enabled ?? false,
@@ -811,7 +821,7 @@ const handleLocationAutoFill = async () => {
       setLoanProfile(data.loan);
       setLoanDraft(data.loan);
       setLoanEdit(false);
-    } catch (err) { console.error(err); }
+    } catch (err) { console.error(err); } finally { setLoanSaveLoading(false); }
   };
 
   // ==========================================
@@ -824,6 +834,7 @@ const handleLocationAutoFill = async () => {
   const handleKsebSave = async () => {
     if (!(await confirm("Save KSEB data?"))) return;
     try {
+      setKsebSaveLoading(true);
       const data = {
         name_change: ksebDraft?.name_change || false,
         name_change_status: ksebDraft?.name_change_status || "",
@@ -838,7 +849,7 @@ const handleLocationAutoFill = async () => {
       setKsebProfile(data);
       setKsebEdit(false);
     } catch (err) {
-    }
+    } finally { setKsebSaveLoading(false); }
   };
 
   const handleMaterialDeliveryEdit = () => {
@@ -972,6 +983,7 @@ const handleLocationAutoFill = async () => {
   const handleServiceSave = async () => {
     if (!(await confirm(serviceEditIndex !== null ? "Save service changes?" : "Create this service entry?"))) return;
     try {
+      setServiceSaveLoading(true);
       const formData = new FormData();
       formData.append("date", serviceForm.date);
       formData.append("comments", serviceForm.comments);
@@ -987,7 +999,7 @@ const handleLocationAutoFill = async () => {
       setServiceFormOpen(false);
       const { data } = await serviceAPI.getServices(id);
       setServices(data);
-    } catch (err) { console.error(err); }
+    } catch (err) { console.error(err); } finally { setServiceSaveLoading(false); }
   };
 
 
@@ -1344,8 +1356,8 @@ return (
                     </div>
 
                     <div className="btn-group">
-                      <button className="save-btn" onClick={handleUpdate} disabled={profileUpdateLoading}>{profileUpdateLoading ? "Saving..." : "Save"}</button>
-                      <button className="cancel-btn" onClick={() => setIsEdit(false)} disabled={profileUpdateLoading}>Cancel</button>
+                      <button className="save-btn" onClick={handleUpdate} disabled={profileSaveLoading}>{profileSaveLoading ? "Saving..." : "Save"}</button>
+                      <button className="cancel-btn" onClick={() => setIsEdit(false)}>Cancel</button>
                     </div>
                   </div>
                 )}
@@ -1541,7 +1553,7 @@ return (
                   </div>
                 </div>
                 <div className="btn-group">
-                  <button className="save-btn" onClick={handleSiteSave}>{siteVisit ? "Save" : "Create Site Visit"}</button>
+                  <button className="save-btn" onClick={handleSiteSave} disabled={siteSaveLoading}>{siteSaveLoading ? "Saving..." : (siteVisit ? "Save" : "Create Site Visit")}</button>
                   <button className="cancel-btn" onClick={() => { setSiteEdit(false); setSiteImages([]); setDeletedImages([]); setExistingImages(siteVisit?.images || []); fetchSiteVisitData(); }}>Cancel</button>
                 </div>
               </div>
@@ -1631,7 +1643,7 @@ return (
                   </div>
                 )}
                 <div className="mnre-btn-group">
-                  {mnreDraft?.enabled && <button className="mnre-save-btn" onClick={handleMnreSave}>{mnreProfile ? "Save" : "Create MNRE Profile"}</button>}
+                  {mnreDraft?.enabled && <button className="mnre-save-btn" onClick={handleMnreSave} disabled={mnreSaveLoading}>{mnreSaveLoading ? "Saving..." : (mnreProfile ? "Save" : "Create MNRE Profile")}</button>}
                   <button className="mnre-cancel-btn" onClick={() => { if (!mnreDraft?.enabled) handleMnreSave(); setMnreDraft(null); setMnreEdit(false);setMnreProfile(null); }}>
                     {mnreDraft?.enabled ? "Cancel" : "Not Needed"}
                   </button>
@@ -1709,7 +1721,7 @@ return (
                         </div>
                       </div>
                       <div className="btn-group">
-                        <button className="save-btn" onClick={() => { handlePaymentSave(); setDeletedPaymentImages([]); }}>Save</button>
+                        <button className="save-btn" onClick={() => { handlePaymentSave(); setDeletedPaymentImages([]); }} disabled={paymentSaveLoading}>{paymentSaveLoading ? "Saving..." : "Save"}</button>
                         <button className="cancel-btn" onClick={handlePaymentCancel}>Cancel</button>
                       </div>
                     </div>
@@ -1806,7 +1818,7 @@ return (
                     </div>
                   )}
                   <div className="mnre-btn-group">
-                    {loanDraft?.enabled && <button className="mnre-save-btn" onClick={() => { handleLoanSave(); }}>{loanProfile === null ? "Loading..." :  "Save"}</button>}
+                    {loanDraft?.enabled && <button className="mnre-save-btn" onClick={() => { handleLoanSave(); }} disabled={loanSaveLoading}>{loanSaveLoading ? "Saving..." :  "Save"}</button>}
                     <button className="mnre-cancel-btn" onClick={() => { if (!loanDraft?.enabled) handleLoanSave(); setLoanDraft(null); setLoanEdit(false); }}>{loanDraft?.enabled ? "Cancel" : "Not Needed"}</button>
                   </div>
                 </div>
@@ -1946,7 +1958,7 @@ return (
 
                 <div className="kseb-box"><div className="kseb-header"><label><input type="checkbox" checked={ksebDraft.feasibility} onChange={(e) => setKsebDraft({ ...ksebDraft, feasibility: e.target.checked })} /> Feasibility Request Submitted</label></div></div>
                 <div className="kseb-box"><div className="kseb-header"><label><input type="checkbox" checked={ksebDraft.fee_paid} onChange={(e) => setKsebDraft({ ...ksebDraft, fee_paid: e.target.checked })} /> Fee Paid</label></div></div>
-                <div className="kseb-btn-group"><button className="kseb-save-btn" onClick={handleKsebSave}>Save</button><button className="kseb-cancel-btn" onClick={() => setKsebEdit(false)}>Cancel</button></div>
+                <div className="kseb-btn-group"><button className="kseb-save-btn" onClick={handleKsebSave} disabled={ksebSaveLoading}>{ksebSaveLoading ? "Saving..." : "Save"}</button><button className="kseb-cancel-btn" onClick={() => setKsebEdit(false)}>Cancel</button></div>
               </div>
             )}
           </div>
@@ -2706,7 +2718,7 @@ return (
                   {serviceForm.images.map((img, i) => <div className="img-box" key={i}><img src={URL.createObjectURL(img)} alt="" /><span onClick={() => removeServiceNewImage(i)}>❌</span></div>)}
                 </div>
                 <textarea placeholder="Comments" value={serviceForm.comments} onChange={(e) => setServiceForm({ ...serviceForm, comments: e.target.value })} />
-                <div className="form-actions"><button onClick={handleServiceSave}>Save</button><button onClick={() => setServiceFormOpen(false)}>Cancel</button></div>
+                <div className="form-actions"><button onClick={handleServiceSave} disabled={serviceSaveLoading}>{serviceSaveLoading ? "Saving..." : "Save"}</button><button onClick={() => setServiceFormOpen(false)}>Cancel</button></div>
               </div>
             )}
           </div>
