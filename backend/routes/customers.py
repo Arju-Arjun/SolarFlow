@@ -22,8 +22,8 @@ import uuid
 # =========================
 # CONFIG
 # =========================
-UPLOAD_FOLDER = "backend/static/uploads/profile_photo"
-DEFAULT_IMAGE = "/backend/static/uploads/profile_photo/default.png"
+UPLOAD_FOLDER = "backend/static/profile_photo"
+DEFAULT_IMAGE = "https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg"
 
 # =========================
 # BLUEPRINT

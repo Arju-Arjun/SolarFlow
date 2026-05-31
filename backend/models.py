@@ -7,7 +7,7 @@ import json
 # CONSTANTS
 # =========================
 UPLOAD_FOLDER = "backend/static/profile_photo"
-DEFAULT_IMAGE = "https://upload.wikimedia.org/wikipedia/commons/2/2e/Microsoft_Account_Logo.svg"
+DEFAULT_IMAGE = "https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg"
 
 
 # =========================
