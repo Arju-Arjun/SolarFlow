@@ -207,11 +207,12 @@
 
 // export default Customers;
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { customersAPI, workflowAPI } from "../api";
 import WorkflowDiagram from "../components/WorkflowDiagram";
 import { FaHome } from "react-icons/fa";
+import usePolling from "../hooks/usePolling";
 
 function Customers() {
   const [customers, setCustomers] = useState([]);
@@ -241,21 +242,20 @@ function Customers() {
     }
   }, []);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const res = await customersAPI.list();
-        setCustomers(res.data);
-      } catch (err) {
-        console.log(
-          "Error fetching customers:",
-          err.response?.data || err.message
-        );
-      }
-    };
-
-    fetchData();
+  const fetchData = useCallback(async () => {
+    try {
+      const res = await customersAPI.list();
+      setCustomers(res.data);
+    } catch (err) {
+      console.log(
+        "Error fetching customers:",
+        err.response?.data || err.message
+      );
+    }
   }, []);
+
+  // Poll customers every 10 seconds
+  usePolling(fetchData, 10000);
 
   const handleCustomerSelect = async (customer) => {
     if (expandedRowId === customer.id) {

@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { FaHome, FaBars, FaTimes } from "react-icons/fa";
 import { FaLocationCrosshairs } from "react-icons/fa6";
@@ -17,6 +17,7 @@ import {
   serviceAPI,
 } from "../../api";
 import useConfirm from "../../hooks/useConfirm";
+import usePolling from "../../hooks/usePolling";
 
 const getGoogleMapsUrl = (location) => {
   if (!location) return "#";
@@ -235,20 +236,20 @@ const [deletedGeoImages, setDeletedGeoImages] = useState([]);
   // SIDE EFFECTS (useEffect)
   // ==========================================
 
-  // Fetch Primary Customer Data
-  useEffect(() => {
-    const fetchCustomer = async () => {
-      try {
-        const res = await customersAPI.get(id);
-        setCustomer(res.data);
-      } catch (err) {
-        setError(err.response?.data?.message || err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchCustomer();
+  // Fetch Primary Customer Data (polled)
+  const fetchCustomer = useCallback(async () => {
+    try {
+      const res = await customersAPI.get(id);
+      setCustomer(res.data);
+      setError("");
+    } catch (err) {
+      setError(err.response?.data?.message || err.message);
+    } finally {
+      setLoading(false);
+    }
   }, [id]);
+
+  usePolling(fetchCustomer, 10000);
 
   // Handle Window Resize for Responsive Tab Menu
   useEffect(() => {
@@ -259,72 +260,67 @@ const [deletedGeoImages, setDeletedGeoImages] = useState([]);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Fetch Site Visit Data
-  useEffect(() => {
-    const fetchSiteVisit = async () => {
-      try {
-        const res = await siteVisitAPI.get(id);
-        setSiteVisit(res.data);
-      } catch (err) {
-        setSiteVisit(null);
-      }
-    };
-    fetchSiteVisit();
+  // Fetch Site Visit Data (polled)
+  const fetchSiteVisit = useCallback(async () => {
+    try {
+      const res = await siteVisitAPI.get(id);
+      setSiteVisit(res.data);
+    } catch (err) {
+      setSiteVisit(null);
+    }
   }, [id]);
+
+  usePolling(fetchSiteVisit, 10000);
 
   // Fetch MNRE and Loan Data
-  useEffect(() => {
-    const fetchMnre = async () => {
-      try {
-        const res = await mnreAPI.get(id);
-        setMnreProfile(res.data);
-      } catch (err) {
-        setMnreProfile(null);
-      }
-    };
-
-    const fetchLoan = async () => {
-      try {
-        const res = await loanAPI.get(id);
-        setLoanProfile(res.data);
-        setLoanDraft(res.data);
-      } catch (err) {
-        setLoanProfile(null);
-        setLoanDraft(null);
-      }
-    };
-
-    fetchMnre();
-    fetchLoan();
+  const fetchMnre = useCallback(async () => {
+    try {
+      const res = await mnreAPI.get(id);
+      setMnreProfile(res.data);
+    } catch (err) {
+      setMnreProfile(null);
+    }
   }, [id]);
+
+  const fetchLoan = useCallback(async () => {
+    try {
+      const res = await loanAPI.get(id);
+      setLoanProfile(res.data);
+      setLoanDraft(res.data);
+    } catch (err) {
+      setLoanProfile(null);
+      setLoanDraft(null);
+    }
+  }, [id]);
+
+  usePolling(fetchMnre, 10000);
+  usePolling(fetchLoan, 20000);
 
   // Fetch Payment Data
-  useEffect(() => {
-    const fetchPayment = async () => {
-      try {
-        const res = await paymentAPI.get(id);
-        setPayment(res.data);
-        setExistingPaymentImages(res.data.images || []);
-      } catch (err) {
-        setPayment(null);
-      }
-    };
-    fetchPayment();
+  const fetchPayment = useCallback(async () => {
+    try {
+      const res = await paymentAPI.get(id);
+      setPayment(res.data);
+      setExistingPaymentImages(res.data.images || []);
+    } catch (err) {
+      setPayment(null);
+    }
   }, [id]);
 
+  usePolling(fetchPayment, 10000);
+
   // Fetch KSEB General Data
-  useEffect(() => {
-    const fetchKseb = async () => {
-      try {
-        const res = await ksebAPI.get(id);
-        setKsebProfile(res.data);
-        setKsebDraft(res.data);
-      } catch (err) {
-        setKsebProfile(null);
-      }
-    };
-    fetchKseb();
+  const fetchKseb = useCallback(async () => {
+    try {
+      const res = await ksebAPI.get(id);
+      setKsebProfile(res.data);
+      setKsebDraft(res.data);
+    } catch (err) {
+      setKsebProfile(null);
+    }
   }, [id]);
+
+  usePolling(fetchKseb, 10000);
 
   // Fetch KSEB Registration Data
   useEffect(() => {
@@ -361,17 +357,17 @@ const [deletedGeoImages, setDeletedGeoImages] = useState([]);
   }, [id]);
 
   // Fetch Services when Tab Active
-  useEffect(() => {
-    const fetchServices = async () => {
-      try {
-        const { data } = await serviceAPI.getServices(id);
-        setServices(data);
-      } catch (err) {
-        setServices([]);
-      }
-    };
-    if (activeTab === "service") fetchServices();
+  const fetchServices = useCallback(async () => {
+    if (activeTab !== "service") return;
+    try {
+      const { data } = await serviceAPI.getServices(id);
+      setServices(data);
+    } catch (err) {
+      setServices([]);
+    }
   }, [id, activeTab]);
+
+  usePolling(fetchServices, 10000);
 
   // Fetch MNRE Installation when Tab Active
   useEffect(() => {
@@ -553,8 +549,7 @@ useEffect(() => {
 
   const fetchSiteVisitData = async () => {
     try {
-      const res = await siteVisitAPI.get(id);
-      setSiteVisit(res.data);
+      await fetchSiteVisit();
     } catch (err) {
       console.log(err);
     }
