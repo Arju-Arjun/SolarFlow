@@ -1161,7 +1161,7 @@ return (
                           ? URL.createObjectURL(profileImage)
                           : customer?.profile_photo
                             ? `${process.env.REACT_APP_BASE_URL}${customer.profile_photo}`
-                            : `${process.env.REACT_APP_BASE_URL}backend/static/profile_photo/default.png`
+                            : "https://upload.wikimedia.org/wikipedia/commons/2/2e/Microsoft_Account_Logo.svg"
                       }
                   alt="profile"
                 />
