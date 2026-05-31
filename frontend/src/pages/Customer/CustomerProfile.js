@@ -111,6 +111,7 @@ const CustomerProfile = () => {
   const [mnreInstallation, setMnreInstallation] = useState(null);
   const [mnreInstallationEdit, setMnreInstallationEdit] = useState(false);
   const [mnreInstallationDraft, setMnreInstallationDraft] = useState(null);
+  const [mnreInstallationSaveLoading, setMnreInstallationSaveLoading] = useState(false);
 
   // Payment State
   const [payment, setPayment] = useState(null);
@@ -689,7 +690,7 @@ const handleLocationAutoFill = async () => {
   const handleMnreInstallationSave = async () => {
     if (!(await confirm(mnreInstallation?.id ? "Save MNRE installation updates?" : "Create MNRE installation details?"))) return;
     try {
-      setLoading(true);
+      setMnreInstallationSaveLoading(true);
       const data = {
         id: mnreInstallation?.id,
         installation_status: mnreInstallationDraft?.installation_status || "",
@@ -703,7 +704,7 @@ const handleLocationAutoFill = async () => {
       setMnreInstallation(response.data);
       setMnreInstallationDraft(response.data);
       setMnreInstallationEdit(false);
-    } catch (err) { } finally { setLoading(false); }
+    } catch (err) { } finally { setMnreInstallationSaveLoading(false); }
   };
 
   // ==========================================
@@ -1151,15 +1152,18 @@ return (
         {/* ================= TAB MENU ================= */}
         {!isMobile && (
         <div className="tab-menu">
-          {customerTabs.map((tab) => (
-            <button
-              key={tab.key}
-              className={activeTab === tab.key ? "active" : ""}
-              onClick={() => handleTabSelect(tab.key)}
-            >
-              {tab.label}
-            </button>
-          ))}
+          <button className={activeTab === "profile" ? "active" : ""} onClick={() => setActiveTab("profile")}>Profile</button>
+          <button className={activeTab === "site" ? "active" : ""} onClick={() => setActiveTab("site")}>Site Visit</button>
+          <button className={activeTab === "mnre" ? "active" : ""} onClick={() => setActiveTab("mnre")}>MNRE Profile</button>
+          <button className={activeTab === "payment" ? "active" : ""} onClick={() => setActiveTab("payment")}>Payment Flow</button>
+          <button className={activeTab === "loan" ? "active" : ""} onClick={() => setActiveTab("loan")}>Bank Loan</button>
+          <button className={activeTab === "kseb" ? "active" : ""} onClick={() => setActiveTab("kseb")}>KSEB</button>
+          <button className={activeTab === "material_delivery" ? "active" : ""} onClick={() => setActiveTab("material_delivery")}>Material Delivery</button>
+          <button className={activeTab === "installation" ? "active" : ""} onClick={() => setActiveTab("installation")}>Installation</button>
+          <button className={activeTab === "kseb_registration" ? "active" : ""} onClick={() => setActiveTab("kseb_registration")}>KSEB Registration & Commissioning</button>
+          <button className={activeTab === "dcr" ? "active" : ""} onClick={() => setActiveTab("dcr")}>DCR</button>
+          <button className={activeTab === "mnre_installation" ? "active" : ""} onClick={() => setActiveTab("mnre_installation")}>MNRE Installation Details</button>
+          <button className={activeTab === "service" ? "active" : ""} onClick={() => setActiveTab("service")}>Service</button>
         </div>
         )}
 
@@ -2668,9 +2672,9 @@ return (
                   <button
                     className="mnre-save-btn"
                     onClick={handleMnreInstallationSave}
-                    disabled={loading}
+                    disabled={mnreInstallationSaveLoading}
                   >
-                    {loading ? "Saving..." : "Save"}
+                    {mnreInstallationSaveLoading ? "Saving..." : "Save"}
                   </button>
                   <button
                     className="mnre-cancel-btn"
