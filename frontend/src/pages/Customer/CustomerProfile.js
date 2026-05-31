@@ -1102,7 +1102,22 @@ const removeInstallationNewImage = (index) => {
     customer?.city, customer?.district, customer?.state, customer?.pincode
   ].filter(Boolean).join(", ");
 
-  if (loading) return <h3>Loading customer profile...</h3>;
+ if (loading)
+  return (
+    <div style={{
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      height: "70vh",
+      flexDirection: "column",
+      gap: "12px"
+    }}>
+      <div className="spinner"></div>
+      <p style={{ color: "#64748b", fontSize: "14px" }}>
+        Loading customer profile...
+      </p>
+    </div>
+  );
   if (error) return <h3 style={{ color: "red" }}>{error}</h3>;
   if (!customer) return <h3>No customer found</h3>;
 
