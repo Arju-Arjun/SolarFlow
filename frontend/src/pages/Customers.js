@@ -3,14 +3,43 @@ import { useNavigate } from "react-router-dom";
 import { customersAPI, workflowAPI } from "../api";
 import WorkflowDiagram from "../components/WorkflowDiagram";
 import { FaHome } from "react-icons/fa";
+import usePolling from "../hooks/usePolling";
 
 function Customers() {
   const [customers, setCustomers] = useState([]);
   const [expandedRowId, setExpandedRowId] = useState(null);
   const [workflowData, setWorkflowData] = useState(null);
   const [workflowError, setWorkflowError] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
+
+  const safeMergeState = (setState, data) => {
+    if (data == null) return;
+    setState((prev) => {
+      if (!prev || typeof prev !== "object" || Array.isArray(prev) || Array.isArray(data)) {
+        return data;
+      }
+      return { ...prev, ...data };
+    });
+  };
 
   const navigate = useNavigate();
+
+  const refreshCustomersData = async () => {
+    if (isEditing) return;
+    try {
+      const res = await customersAPI.list();
+      safeMergeState(setCustomers, res.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  usePolling({
+    callback: refreshCustomersData,
+    delay: 10000,
+    pause: isEditing,
+    immediate: false,
+  });
 
   useEffect(() => {
     const loader = document.getElementById("top-loader");
@@ -53,10 +82,12 @@ function Customers() {
       setExpandedRowId(null);
       setWorkflowData(null);
       setWorkflowError("");
+      setIsEditing(false);
       return;
     }
 
     setExpandedRowId(customer.id);
+    setIsEditing(true);
     setWorkflowError("");
 
     try {
@@ -148,7 +179,7 @@ function Customers() {
                         color: "blue",
                       }}
                     >
-                      {c.current_status || "Pending"}
+                      {c.current_status || "View"}
                     </td>
                   </tr>
 
