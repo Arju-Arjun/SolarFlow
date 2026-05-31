@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { FaHome, FaBars, FaTimes } from "react-icons/fa";
 import { FaLocationCrosshairs } from "react-icons/fa6";
@@ -18,6 +18,9 @@ import {
 } from "../../api";
 import useConfirm from "../../hooks/useConfirm";
 import usePolling from "../../hooks/usePolling";
+
+usePolling(loadCustomerData, 10000);
+
 
 const getGoogleMapsUrl = (location) => {
   if (!location) return "#";
@@ -189,227 +192,29 @@ const CustomerProfile = () => {
     comments: ""
   });
 
+
+
+ // ==========================================
+ // Installation State
+//  ==========================================
   // Installation State
   const [installation, setInstallation] = useState(null);
-  const [installationEdit, setInstallationEdit] = useState(false);
-  const [installationDraft, setInstallationDraft] = useState({
-    electrical_installed: false,
-    electrical_comments: "",
-    structure_installed: false,
-    structure_comments: "",
-    geo_images: []
-  });
-  const [installationLoading, setInstallationLoading] = useState(false);
-  const [existingGeoImages, setExistingGeoImages] = useState([]);
-  const [deletedGeoImages, setDeletedGeoImages] = useState([]);
+const [installationEdit, setInstallationEdit] = useState(false);
 
-  const mountedRef = useRef(false);
+const [installationDraft, setInstallationDraft] = useState({
+  electrical_installed: false,
+  electrical_comments: "",
+  structure_installed: false,
+  structure_comments: "",
+  geo_images: []
+});
 
-  useEffect(() => {
-    mountedRef.current = true;
-    return () => {
-      mountedRef.current = false;
-    };
-  }, []);
+const [installationLoading, setInstallationLoading] = useState(false);
+const [existingGeoImages, setExistingGeoImages] = useState([]);
+const [deletedGeoImages, setDeletedGeoImages] = useState([]);
 
-  const loadAllData = useCallback(async () => {
-    if (!id || !mountedRef.current) return;
 
-    setLoading(true);
-    setError("");
-
-    const [
-      customerRes,
-      siteVisitRes,
-      mnreRes,
-      loanRes,
-      paymentRes,
-      ksebRes,
-      ksebRegistrationRes,
-      dcrRes,
-      serviceRes,
-      mnreInstallationRes,
-      installationRes,
-      materialDeliveryRes,
-    ] = await Promise.allSettled([
-      customersAPI.get(id),
-      siteVisitAPI.get(id),
-      mnreAPI.get(id),
-      loanAPI.get(id),
-      paymentAPI.get(id),
-      ksebAPI.get(id),
-      ksebRegistrationAPI.get(id),
-      dcrAPI.get(id),
-      serviceAPI.getServices(id),
-      mnreAPI.getInstallation(id),
-      installationAPI.get(id),
-      materialDeliveryAPI.get(id),
-    ]);
-
-    if (!mountedRef.current) return;
-
-    const fetchErrors = [
-      customerRes,
-      siteVisitRes,
-      mnreRes,
-      loanRes,
-      paymentRes,
-      ksebRes,
-      ksebRegistrationRes,
-      dcrRes,
-      serviceRes,
-    ].filter((result) => result.status === "rejected");
-
-    if (fetchErrors.length > 0) {
-      const firstError = fetchErrors[0].reason;
-      setError(
-        firstError?.response?.data?.message ||
-          firstError?.message ||
-          "One or more customer endpoints failed to load."
-      );
-    } else {
-      setError("");
-    }
-
-    if (customerRes.status === "fulfilled") {
-      setCustomer(customerRes.value.data);
-    } else {
-      setCustomer(null);
-    }
-
-    if (siteVisitRes.status === "fulfilled") {
-      setSiteVisit(siteVisitRes.value.data);
-    } else {
-      setSiteVisit(null);
-    }
-
-    if (mnreRes.status === "fulfilled") {
-      setMnreProfile(mnreRes.value.data);
-    } else {
-      setMnreProfile(null);
-    }
-
-    if (loanRes.status === "fulfilled") {
-      setLoanProfile(loanRes.value.data);
-      setLoanDraft(loanRes.value.data || { total_loan: 0 });
-    } else {
-      setLoanProfile(null);
-      setLoanDraft({ total_loan: 0 });
-    }
-
-    if (paymentRes.status === "fulfilled") {
-      setPayment(paymentRes.value.data);
-      setExistingPaymentImages(paymentRes.value.data?.images || []);
-    } else {
-      setPayment(null);
-      setExistingPaymentImages([]);
-    }
-
-    if (ksebRes.status === "fulfilled") {
-      setKsebProfile(ksebRes.value.data);
-      setKsebDraft(ksebRes.value.data);
-    } else {
-      setKsebProfile(null);
-    }
-
-    if (ksebRegistrationRes.status === "fulfilled") {
-      setKsebRegistration(ksebRegistrationRes.value.data);
-      setKsebRegistrationDraft(ksebRegistrationRes.value.data);
-    } else {
-      setKsebRegistration(null);
-    }
-
-    if (dcrRes.status === "fulfilled") {
-      setDcr(dcrRes.value.data);
-      setDcrDraft(dcrRes.value.data);
-    } else {
-      setDcr(null);
-    }
-
-    if (serviceRes.status === "fulfilled") {
-      setServices(serviceRes.value.data);
-    } else {
-      setServices([]);
-    }
-
-    if (
-      mnreInstallationRes.status === "fulfilled" &&
-      mnreInstallationRes.value.status !== 404
-    ) {
-      setMnreInstallation(mnreInstallationRes.value.data);
-      setMnreInstallationDraft(mnreInstallationRes.value.data);
-    } else {
-      setMnreInstallation(null);
-      setMnreInstallationDraft({
-        installation_status: "",
-        installation_comments: "",
-        approval_status: "",
-        approval_comments: "",
-        subsidy_status: "",
-        subsidy_comments: "",
-      });
-    }
-
-    if (
-      installationRes.status === "fulfilled" &&
-      installationRes.value.status !== 404
-    ) {
-      const data = installationRes.value.data;
-      setInstallation(data);
-      setInstallationDraft({
-        electrical_installed: data.electrical_installed || false,
-        electrical_comments: data.electrical_comments || "",
-        structure_installed: data.structure_installed || false,
-        structure_comments: data.structure_comments || "",
-        geo_images: null,
-      });
-      setExistingGeoImages(data.geo_images || []);
-    } else {
-      setInstallation(null);
-      setInstallationDraft({
-        electrical_installed: false,
-        electrical_comments: "",
-        structure_installed: false,
-        structure_comments: "",
-        geo_images: [],
-      });
-      setExistingGeoImages([]);
-    }
-
-    if (
-      materialDeliveryRes.status === "fulfilled" &&
-      materialDeliveryRes.value.status !== 404
-    ) {
-      const data = materialDeliveryRes.value.data;
-      setMaterialDelivery(data);
-      setMaterialDeliveryDraft({
-        changes: data.changes || "",
-        extra_material: data.extra_material || "",
-        structure_changes: data.structure_changes || "",
-        electrical_delivered: data.electrical_delivered || false,
-        structure_delivered: data.structure_delivered || false,
-        panel_delivered: data.panel_delivered || false,
-        comments: data.comments || "",
-      });
-    } else {
-      setMaterialDelivery(null);
-      setMaterialDeliveryDraft({
-        changes: "",
-        extra_material: "",
-        structure_changes: "",
-        electrical_delivered: false,
-        structure_delivered: false,
-        panel_delivered: false,
-        comments: "",
-      });
-    }
-
-    if (mountedRef.current) {
-      setLoading(false);
-    }
-  }, [id]);
-
-  usePolling(loadAllData, 10000);
+  
 
 
   // ==========================================
@@ -434,6 +239,21 @@ const CustomerProfile = () => {
   // SIDE EFFECTS (useEffect)
   // ==========================================
 
+  // Fetch Primary Customer Data
+  useEffect(() => {
+    const fetchCustomer = async () => {
+      try {
+        const res = await customersAPI.get(id);
+        setCustomer(res.data);
+      } catch (err) {
+        setError(err.response?.data?.message || err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchCustomer();
+  }, [id]);
+
   // Handle Window Resize for Responsive Tab Menu
   useEffect(() => {
     const handleResize = () => {
@@ -442,6 +262,146 @@ const CustomerProfile = () => {
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  // Fetch Site Visit Data
+  useEffect(() => {
+    const fetchSiteVisit = async () => {
+      try {
+        const res = await siteVisitAPI.get(id);
+        setSiteVisit(res.data);
+      } catch (err) {
+        setSiteVisit(null);
+      }
+    };
+    fetchSiteVisit();
+  }, [id]);
+
+  // Fetch MNRE and Loan Data
+  useEffect(() => {
+    const fetchMnre = async () => {
+      try {
+        const res = await mnreAPI.get(id);
+        setMnreProfile(res.data);
+      } catch (err) {
+        setMnreProfile(null);
+      }
+    };
+
+    const fetchLoan = async () => {
+      try {
+        const res = await loanAPI.get(id);
+        setLoanProfile(res.data);
+        setLoanDraft(res.data);
+      } catch (err) {
+        setLoanProfile(null);
+        setLoanDraft(null);
+      }
+    };
+
+    fetchMnre();
+    fetchLoan();
+  }, [id]);
+
+  // Fetch Payment Data
+  useEffect(() => {
+    const fetchPayment = async () => {
+      try {
+        const res = await paymentAPI.get(id);
+        setPayment(res.data);
+        setExistingPaymentImages(res.data.images || []);
+      } catch (err) {
+        setPayment(null);
+      }
+    };
+    fetchPayment();
+  }, [id]);
+
+  // Fetch KSEB General Data
+  useEffect(() => {
+    const fetchKseb = async () => {
+      try {
+        const res = await ksebAPI.get(id);
+        setKsebProfile(res.data);
+        setKsebDraft(res.data);
+      } catch (err) {
+        setKsebProfile(null);
+      }
+    };
+    fetchKseb();
+  }, [id]);
+
+  // Fetch KSEB Registration Data
+  useEffect(() => {
+    const fetchKsebRegistration = async () => {
+      try {
+        setKsebRegistrationLoading(true);
+        const res = await ksebRegistrationAPI.get(id);
+        setKsebRegistration(res.data);
+        setKsebRegistrationDraft(res.data);
+      } catch (err) {
+        setKsebRegistration(null);
+      } finally {
+        setKsebRegistrationLoading(false);
+      }
+    };
+    fetchKsebRegistration();
+  }, [id]);
+
+  // Fetch DCR Data
+  useEffect(() => {
+    const fetchDcr = async () => {
+      try {
+        setDcrLoading(true);
+        const res = await dcrAPI.get(id);
+        setDcr(res.data);
+        setDcrDraft(res.data);
+      } catch (err) {
+        setDcr(null);
+      } finally {
+        setDcrLoading(false);
+      }
+    };
+    fetchDcr();
+  }, [id]);
+
+  // Fetch Services when Tab Active
+  useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        const { data } = await serviceAPI.getServices(id);
+        setServices(data);
+      } catch (err) {
+        setServices([]);
+      }
+    };
+    if (activeTab === "service") fetchServices();
+  }, [id, activeTab]);
+
+  // Fetch MNRE Installation when Tab Active
+  useEffect(() => {
+    const fetchMnreInstallation = async () => {
+      try {
+        const res = await mnreAPI.getInstallation(id);
+        if (res.status === 404) {
+          setMnreInstallation(null);
+          setMnreInstallationDraft({
+            installation_status: "",
+            installation_comments: "",
+            approval_status: "",
+            approval_comments: "",
+            subsidy_status: "",
+            subsidy_comments: "",
+          });
+          return;
+        }
+        setMnreInstallation(res.data);
+        setMnreInstallationDraft(res.data);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    if (id && activeTab === "mnre_installation") fetchMnreInstallation();
+  }, [id, activeTab]);
 
   // Helpers / Computed Observers
   useEffect(() => {
@@ -460,6 +420,100 @@ const CustomerProfile = () => {
 
 
 
+
+
+useEffect(() => {
+  const fetchInstallation = async () => {
+    try {
+      setInstallationLoading(true);
+      const res = await installationAPI.get(id);
+
+      if (res.status === 404) {
+        setInstallation(null);
+        setInstallationDraft({
+          electrical_installed: false,
+          electrical_comments: "",
+          structure_installed: false,
+          structure_comments: "",
+          geo_images: null,
+        });
+        setExistingGeoImages([]);
+        return;
+      }
+
+      const data = res.data;
+      setInstallation(data);
+      setInstallationDraft({
+        electrical_installed: data.electrical_installed || false,
+        electrical_comments: data.electrical_comments || "",
+        structure_installed: data.structure_installed || false,
+        structure_comments: data.structure_comments || "",
+        geo_images: null,
+      });
+      setExistingGeoImages(data.geo_images || []);
+    } catch (err) {
+      setInstallation(null);
+      setInstallationDraft({
+        electrical_installed: false,
+        electrical_comments: "",
+        structure_installed: false,
+        structure_comments: "",
+        geo_images: null,
+      });
+      setExistingGeoImages([]);
+    } finally {
+      setInstallationLoading(false);
+    }
+  };
+
+  if (id && activeTab === "installation") {
+    fetchInstallation();
+  }
+}, [id, activeTab]);
+
+  // Fetch Material Delivery when Tab Active
+  useEffect(() => {
+    const fetchMaterialDelivery = async () => {
+      try {
+        setMaterialDeliveryLoading(true);
+        const res = await materialDeliveryAPI.get(id);
+
+        if (res.status === 404) {
+          setMaterialDelivery(null);
+          setMaterialDeliveryDraft({
+            changes: "",
+            extra_material: "",
+            structure_changes: "",
+            electrical_delivered: false,
+            structure_delivered: false,
+            panel_delivered: false,
+            comments: "",
+          });
+          return;
+        }
+
+        const data = res.data;
+        setMaterialDelivery(data);
+        setMaterialDeliveryDraft({
+          changes: data.changes || "",
+          extra_material: data.extra_material || "",
+          structure_changes: data.structure_changes || "",
+          electrical_delivered: data.electrical_delivered || false,
+          structure_delivered: data.structure_delivered || false,
+          panel_delivered: data.panel_delivered || false,
+          comments: data.comments || "",
+        });
+      } catch (err) {
+        setMaterialDelivery(null);
+      } finally {
+        setMaterialDeliveryLoading(false);
+      }
+    };
+
+    if (id && activeTab === "material_delivery") {
+      fetchMaterialDelivery();
+    }
+  }, [id, activeTab]);
 
 
   // ==========================================

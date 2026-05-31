@@ -1,9 +1,11 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { customersAPI, workflowAPI } from "../api";
 import WorkflowDiagram from "../components/WorkflowDiagram";
 import { FaHome } from "react-icons/fa";
 import usePolling from "../hooks/usePolling";
+
+usePolling(fetchCustomers, 10000);
 
 function Customers() {
   const [customers, setCustomers] = useState([]);
@@ -12,20 +14,6 @@ function Customers() {
   const [workflowError, setWorkflowError] = useState("");
 
   const navigate = useNavigate();
-
-  const fetchCustomers = useCallback(async () => {
-    try {
-      const res = await customersAPI.list();
-      setCustomers(res.data);
-    } catch (err) {
-      console.log(
-        "Error fetching customers:",
-        err.response?.data || err.message
-      );
-    }
-  }, []);
-
-  usePolling(fetchCustomers, 10000);
 
   useEffect(() => {
     const loader = document.getElementById("top-loader");
@@ -45,6 +33,22 @@ function Customers() {
         loader.style.width = "0%";
       }, 900);
     }
+  }, []);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const res = await customersAPI.list();
+        setCustomers(res.data);
+      } catch (err) {
+        console.log(
+          "Error fetching customers:",
+          err.response?.data || err.message
+        );
+      }
+    };
+
+    fetchData();
   }, []);
 
   const handleCustomerSelect = async (customer) => {
