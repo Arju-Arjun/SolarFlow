@@ -17,6 +17,7 @@ import {
   serviceAPI,
 } from "../../api";
 import useConfirm from "../../hooks/useConfirm";
+import usePolling from "../../hooks/usePolling";
 
 const getGoogleMapsUrl = (location) => {
   if (!location) return "#";
@@ -102,6 +103,18 @@ const CustomerProfile = () => {
   const [locationDetected, setLocationDetected] = useState(false);
   const [locationLoading, setLocationLoading] = useState(false);
 
+  const [isEditing, setIsEditing] = useState(false);
+
+  const safeMergeState = (setState, data) => {
+    if (data == null) return;
+    setState((prev) => {
+      if (!prev || typeof prev !== "object" || Array.isArray(prev) || Array.isArray(data)) {
+        return data;
+      }
+      return { ...prev, ...data };
+    });
+  };
+
   // MNRE State
   const [mnreProfile, setMnreProfile] = useState(null);
   const [mnreEdit, setMnreEdit] = useState(false);
@@ -180,6 +193,40 @@ const CustomerProfile = () => {
     comments: ""
   });
 
+  useEffect(() => {
+    setIsEditing(
+      Boolean(
+        isEdit ||
+        siteEdit ||
+        mnreEdit ||
+        paymentEdit ||
+        loanEdit ||
+        ksebEdit ||
+        ksebRegistrationEdit ||
+        dcrEdit ||
+        materialDeliveryEdit ||
+        installationEdit ||
+        mnreInstallationEdit ||
+        serviceEditIndex !== null ||
+        serviceFormOpen
+      )
+    );
+  }, [
+    isEdit,
+    siteEdit,
+    mnreEdit,
+    paymentEdit,
+    loanEdit,
+    ksebEdit,
+    ksebRegistrationEdit,
+    dcrEdit,
+    materialDeliveryEdit,
+    installationEdit,
+    mnreInstallationEdit,
+    serviceEditIndex,
+    serviceFormOpen,
+  ]);
+
 
 
  // ==========================================
@@ -226,6 +273,150 @@ const [deletedGeoImages, setDeletedGeoImages] = useState([]);
   // ==========================================
   // SIDE EFFECTS (useEffect)
   // ==========================================
+
+  const refreshCustomerData = async () => {
+    if (isEditing) return;
+    try {
+      const res = await customersAPI.get(id);
+      safeMergeState(setCustomer, res.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const refreshSiteVisitData = async () => {
+    if (isEditing) return;
+    try {
+      const res = await siteVisitAPI.get(id);
+      safeMergeState(setSiteVisit, res.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const refreshMnreData = async () => {
+    if (isEditing) return;
+    try {
+      const res = await mnreAPI.get(id);
+      safeMergeState(setMnreProfile, res.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const refreshLoanData = async () => {
+    if (isEditing) return;
+    try {
+      const res = await loanAPI.get(id);
+      safeMergeState(setLoanProfile, res.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const refreshPaymentData = async () => {
+    if (isEditing) return;
+    try {
+      const res = await paymentAPI.get(id);
+      safeMergeState(setPayment, res.data);
+      if (res.data?.images) setExistingPaymentImages(res.data.images);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const refreshKsebData = async () => {
+    if (isEditing) return;
+    try {
+      const res = await ksebAPI.get(id);
+      safeMergeState(setKsebProfile, res.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const refreshKsebRegistrationData = async () => {
+    if (isEditing) return;
+    try {
+      const res = await ksebRegistrationAPI.get(id);
+      safeMergeState(setKsebRegistration, res.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const refreshDcrData = async () => {
+    if (isEditing) return;
+    try {
+      const res = await dcrAPI.get(id);
+      safeMergeState(setDcr, res.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const refreshMaterialDeliveryData = async () => {
+    if (isEditing) return;
+    try {
+      const res = await materialDeliveryAPI.get(id);
+      safeMergeState(setMaterialDelivery, res.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const refreshInstallationData = async () => {
+    if (isEditing) return;
+    try {
+      const res = await installationAPI.get(id);
+      safeMergeState(setInstallation, res.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const refreshServicesData = async () => {
+    if (isEditing || activeTab !== "service") return;
+    try {
+      const { data } = await serviceAPI.getServices(id);
+      setServices(data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const refreshMnreInstallationData = async () => {
+    if (isEditing || activeTab !== "mnre_installation") return;
+    try {
+      const res = await mnreAPI.getInstallation(id);
+      if (res.status === 404) return;
+      safeMergeState(setMnreInstallation, res.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  usePolling({
+    callback: async () => {
+      await Promise.all([
+        refreshCustomerData(),
+        refreshSiteVisitData(),
+        refreshMnreData(),
+        refreshLoanData(),
+        refreshPaymentData(),
+        refreshKsebData(),
+        refreshKsebRegistrationData(),
+        refreshDcrData(),
+        refreshMaterialDeliveryData(),
+        refreshInstallationData(),
+        refreshServicesData(),
+        refreshMnreInstallationData(),
+      ]);
+    },
+    delay: 10000,
+    pause: isEditing,
+    immediate: false,
+  });
 
   // Fetch Primary Customer Data
   useEffect(() => {
