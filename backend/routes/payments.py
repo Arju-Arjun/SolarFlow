@@ -23,7 +23,7 @@ UPLOAD_FOLDER = "backend/static/uploads/payments"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # =========================
-# SAVE FILE FUNCTION
+# SAVE FILE
 # =========================
 def save_payment_file(file, customer_name):
     if not file:
@@ -41,8 +41,10 @@ def save_payment_file(file, customer_name):
     return f"/{UPLOAD_FOLDER}/{filename}"
 
 
+# =========================
+# DELETE FILE
+# =========================
 def delete_file(filepath):
-    """Delete file from filesystem"""
     if filepath:
         full_path = filepath.replace("/backend/", "backend/")
         if os.path.exists(full_path):
@@ -53,12 +55,15 @@ def delete_file(filepath):
 
 
 # =========================
-# CREATE PAYMENT
+# CREATE PAYMENT (NEW)
 # =========================
-@payment_bp.route("/<int:customer_id>", methods=["POST"])
+@payment_bp.route("/", methods=["POST"])
 @jwt_required()
-def create_payment(customer_id):
+def create_payment():
     try:
+        data = request.form
+        customer_id = int(data.get("customer_id"))
+
         existing = Payment.query.filter_by(customer_id=customer_id).first()
         if existing:
             return jsonify({"error": "Payment already exists. Use PUT to update."}), 400
@@ -67,25 +72,17 @@ def create_payment(customer_id):
         if not customer:
             return jsonify({"error": "Customer not found"}), 404
 
-        data = request.form
-
-        # ================= CALCULATIONS =================
         advance = float(data.get("advance", 0))
         second = float(data.get("second", 0))
         third = float(data.get("third", 0))
 
-        loan_amount = 0
         loan = Loan.query.filter_by(customer_id=customer_id).first()
-        if loan:
-            loan_amount = float(loan.total_loan_amount or 0)
+        loan_amount = float(loan.total_loan_amount or 0) if loan else 0
+
+        site_visit = SiteVisit.query.filter_by(customer_id=customer_id).first()
+        project_cost = float(site_visit.project_cost or 0) if site_visit else 0
 
         total_received = advance + second + third + loan_amount
-
-        project_cost = 0
-        site_visit = SiteVisit.query.filter_by(customer_id=customer_id).first()
-        if site_visit:
-            project_cost = float(site_visit.project_cost or 0)
-
         balance_due = project_cost - total_received
 
         payment = Payment(
@@ -101,7 +98,7 @@ def create_payment(customer_id):
         db.session.add(payment)
         db.session.commit()
 
-        # ================= FILE UPLOAD =================
+        # FILES
         files = request.files.getlist("files")
         file_paths = []
 
@@ -137,17 +134,13 @@ def create_payment(customer_id):
 # =========================
 # UPDATE PAYMENT
 # =========================
-@payment_bp.route("/<int:customer_id>", methods=["PUT"])
+@payment_bp.route("/<int:id>", methods=["PUT"])
 @jwt_required()
-def update_payment(customer_id):
+def update_payment(id):
     try:
+        payment = Payment.query.get_or_404(id)
         data = request.form
 
-        payment = Payment.query.filter_by(customer_id=customer_id).first()
-        if not payment:
-            return jsonify({"error": "Payment not found"}), 404
-
-        # ================= UPDATE FIELDS =================
         if data.get("advance") is not None:
             payment.advance = float(data.get("advance"))
 
@@ -160,79 +153,54 @@ def update_payment(customer_id):
         if data.get("comments") is not None:
             payment.comments = data.get("comments")
 
-        customer = Customer.query.get(customer_id)
+        customer_id = payment.customer_id
 
-        # ================= RECALCULATE TOTAL =================
-        advance = float(payment.advance or 0)
-        second = float(payment.second or 0)
-        third = float(payment.third or 0)
-
-        loan_amount = 0
         loan = Loan.query.filter_by(customer_id=customer_id).first()
-        if loan:
-            loan_amount = float(loan.total_loan_amount or 0)
+        loan_amount = float(loan.total_loan_amount or 0) if loan else 0
 
-        payment.total_received = advance + second + third + loan_amount
-
-        project_cost = 0
         site_visit = SiteVisit.query.filter_by(customer_id=customer_id).first()
-        if site_visit:
-            project_cost = float(site_visit.project_cost or 0)
+        project_cost = float(site_visit.project_cost or 0) if site_visit else 0
+
+        payment.total_received = (
+            float(payment.advance or 0) +
+            float(payment.second or 0) +
+            float(payment.third or 0) +
+            loan_amount
+        )
 
         payment.balance_due = project_cost - payment.total_received
 
-        # ================= IMAGE HANDLING =================
+        # FILES
         files = request.files.getlist("files")
-        print("Received files:", files)
-
-        # Start with DB images
         final_images = payment.payment_proofs or []
 
-        # 1️⃣ Sync existing images from frontend
         existing_images_param = data.get("existing_images")
-
         if existing_images_param:
             try:
                 final_images = json.loads(existing_images_param)
             except:
-                final_images = payment.payment_proofs or []
+                pass
 
-        # 2️⃣ Add new uploaded images
         for file in files:
             if file and file.filename:
-                path = save_payment_file(file, customer.name)
+                path = save_payment_file(file, Customer.query.get(customer_id).name)
                 if path:
                     final_images.append(path)
 
-        # 3️⃣ Remove deleted images
         deleted_images = data.get("deleted_images")
-
         if deleted_images:
             try:
                 deleted_list = json.loads(deleted_images)
-                final_images = [
-                    img for img in final_images
-                    if img not in deleted_list
-                ]
+                final_images = [img for img in final_images if img not in deleted_list]
+
+                for img in deleted_list:
+                    delete_file(img)
             except:
                 pass
 
-        # ================= SAVE FINAL IMAGES =================
         payment.payment_proofs = final_images
 
         db.session.commit()
-
-        # ================= DELETE FILES FROM SERVER =================
-        if deleted_images:
-            try:
-                deleted_list = json.loads(deleted_images)
-
-                for img_path in deleted_list:
-                    print("Deleting file:", img_path)
-                    delete_file(img_path)
-
-            except:
-                pass
 
         return jsonify({
             "message": "Payment updated successfully",
@@ -250,20 +218,18 @@ def update_payment(customer_id):
         }), 200
 
     except Exception as e:
+        db.session.rollback()
         return jsonify({"error": str(e)}), 500
 
 
 # =========================
-# GET PAYMENT
+# GET PAYMENT (FIXED)
 # =========================
-@payment_bp.route("/<int:customer_id>", methods=["GET"])
+@payment_bp.route("/<int:id>", methods=["GET"])
 @jwt_required()
-def get_payment(customer_id):
+def get_payment(id):
     try:
-        payment = Payment.query.filter_by(customer_id=customer_id).first()
-
-        if not payment:
-            return jsonify({"error": "No payment found"}), 404
+        payment = Payment.query.get_or_404(id)
 
         return jsonify({
             "id": payment.id,
@@ -276,6 +242,24 @@ def get_payment(customer_id):
             "comments": payment.comments,
             "images": payment.payment_proofs or []
         }), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# =========================
+# DELETE PAYMENT
+# =========================
+@payment_bp.route("/<int:id>", methods=["DELETE"])
+@jwt_required()
+def delete_payment(id):
+    try:
+        payment = Payment.query.get_or_404(id)
+
+        db.session.delete(payment)
+        db.session.commit()
+
+        return jsonify({"message": "Deleted successfully"}), 200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500

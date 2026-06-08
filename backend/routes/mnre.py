@@ -139,10 +139,15 @@ def get_mnre_entry(customer_id):
     mnre_entry = Mnre.query.filter_by(customer_id=customer_id).first()
 
     if not mnre_entry:
-        print("\n\n\n\n\12222222222")
-        return jsonify({"error": "MNRE entry not found"}), 404
+        return jsonify({
+            "exists": False,
+            "data": None
+        }), 200
 
-    return jsonify(mnre_entry.to_dict())
+    return jsonify({
+        "exists": True,
+        "data": mnre_entry.to_dict()
+    }), 200
 
 # =========================
 # DELETE MNRE

@@ -1,15 +1,17 @@
 import axios from "axios";
 
-
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || "https://solarflow-backend-6yjl.onrender.com/api",
+  baseURL:
+    process.env.REACT_APP_API_URL ||
+    "https://solarflow-backend-6yjl.onrender.com/api",
   headers: {
     "Content-Type": "application/json",
   },
 });
 
-
-
+// =========================
+// TOKEN INTERCEPTOR
+// =========================
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("spm_token");
 
@@ -24,18 +26,22 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// =========================
+// RESPONSE HANDLER
+// =========================
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response) {
-      if (error.response.status === 401) {
-        console.warn("Unauthorized request - token may have expired.");
-      }
+    if (error.response?.status === 401) {
+      console.warn("Unauthorized - token expired");
     }
     return Promise.reject(error);
   }
 );
 
+// =========================
+// HELPERS
+// =========================
 const buildUrl = (path) => (path.startsWith("/") ? path : `/${path}`);
 
 const get = (path, config) => api.get(buildUrl(path), config);
@@ -43,84 +49,162 @@ const post = (path, data, config) => api.post(buildUrl(path), data, config);
 const put = (path, data, config) => api.put(buildUrl(path), data, config);
 const remove = (path, config) => api.delete(buildUrl(path), config);
 
+// =========================
+// CUSTOMERS
+// =========================
 export const customersAPI = {
   list: () => get("/customers/"),
   get: (id) => get(`/customers/${id}`),
   create: (payload) => post("/customers/", payload),
-  update: (id, payload, config) => put(`/customers/${id}`, payload, config),
+  update: (id, payload) => put(`/customers/${id}`, payload),
   remove: (id) => remove(`/customers/${id}`),
 };
 
+// =========================
+// WORKFLOW
+// =========================
 export const workflowAPI = {
   get: (customerId) => get(`/customers/${customerId}/workflow`),
-  save: (customerId, section, payload) => put(`/customers/${customerId}/workflow`, { section, payload }),
+  save: (customerId, section, payload) =>
+    put(`/customers/${customerId}/workflow`, { section, payload }),
 };
 
+// =========================
+// SITE VISIT (ID BASED)
+// =========================
 export const siteVisitAPI = {
-  get: (customerId) => get(`/site-visits/${customerId}`, { validateStatus: (status) => status < 500 }),
-  save: (id, payload, config) => id ? put(`/site-visits/${id}`, payload, config) : post("/site-visits/", payload, config),
+  get: (id) =>
+    get(`/site-visits/${id}`, {
+      validateStatus: (status) => status < 500,
+    }),
+
+  save: (id, payload, config) =>
+    id
+      ? put(`/site-visits/${id}`, payload, config)
+      : post("/site-visits/", payload, config),
 };
 
+// =========================
+// MNRE (customer-based still OK)
+// =========================
 export const mnreAPI = {
   get: (customerId) => get(`/mnre/${customerId}`),
-  save: (customerId, payload, config) => post(`/mnre/${customerId}`, payload, config),
-  getInstallation: (customerId) => get(`/mnre/installation/${customerId}`, { validateStatus: (status) => status < 500 }),
-  saveInstallation: (customerId, payload, config) => payload?.id ? put(`/mnre/installation/${customerId}`, payload, config) : post(`/mnre/installation/${customerId}`, payload, config),
+  save: (customerId, payload, config) =>
+    post(`/mnre/${customerId}`, payload, config),
+  getInstallation: (customerId) =>
+    get(`/mnre/installation/${customerId}`, {
+      validateStatus: (status) => status < 500,
+    }),
+  saveInstallation: (customerId, payload, config) =>
+    payload?.id
+      ? put(`/mnre/installation/${customerId}`, payload, config)
+      : post(`/mnre/installation/${customerId}`, payload, config),
 };
 
+// =========================
+// LOANS
+// =========================
 export const loanAPI = {
   get: (customerId) => get(`/loans/${customerId}`),
-  save: (customerId, payload, config) => post(`/loans/${customerId}`, payload, config),
+  save: (customerId, payload, config) =>
+    post(`/loans/${customerId}`, payload, config),
 };
 
+// =========================
+// PAYMENTS (FIXED - ID BASED)
+// =========================
 export const paymentAPI = {
-  get: (customerId) => get(`/payments/${customerId}`),
-  save: (customerId, payload, isUpdate, config) => isUpdate ? put(`/payments/${customerId}`, payload, config) : post(`/payments/${customerId}`, payload, config),
+  // GET payment by PAYMENT ID
+  get: (id) =>
+    get(`/payments/${id}`, {
+      validateStatus: (status) => status < 500,
+    }),
+
+  // CREATE payment (uses customer_id inside payload)
+  create: (payload, config) =>
+    post("/payments/", payload, config),
+
+  // UPDATE payment by PAYMENT ID
+  update: (id, payload, config) =>
+    put(`/payments/${id}`, payload, config),
 };
 
+// =========================
+// KSEB
+// =========================
 export const ksebAPI = {
   get: (customerId) => get(`/kseb/${customerId}`),
-  save: (customerId, payload, config) => post(`/kseb/${customerId}`, payload, config),
+  save: (customerId, payload, config) =>
+    post(`/kseb/${customerId}`, payload, config),
 };
 
+// =========================
+// KSEB REGISTRATION
+// =========================
 export const ksebRegistrationAPI = {
   get: (customerId) => get(`/kseb/registration/${customerId}`),
-  save: (customerId, payload, isUpdate, config) => isUpdate ? put(`/kseb/registration/${customerId}`, payload, config) : post(`/kseb/registration/${customerId}`, payload, config),
+  save: (customerId, payload, isUpdate, config) =>
+    isUpdate
+      ? put(`/kseb/registration/${customerId}`, payload, config)
+      : post(`/kseb/registration/${customerId}`, payload, config),
 };
 
+// =========================
+// DCR
+// =========================
 export const dcrAPI = {
   get: (customerId) => get(`/kseb/dcr/${customerId}`),
-  save: (customerId, payload, isUpdate, config) => isUpdate ? put(`/kseb/dcr/${customerId}`, payload, config) : post(`/kseb/dcr/${customerId}`, payload, config),
+  save: (customerId, payload, isUpdate, config) =>
+    isUpdate
+      ? put(`/kseb/dcr/${customerId}`, payload, config)
+      : post(`/kseb/dcr/${customerId}`, payload, config),
 };
 
+// =========================
+// MATERIAL DELIVERY
+// =========================
 export const materialDeliveryAPI = {
-  get: (customerId) => get(`/material-deliveries/${customerId}`, { validateStatus: (status) => status < 500 }),
-  save: (customerId, payload, config) => payload?.id ? put(`/material-deliveries/${customerId}`, payload, config) : post(`/material-deliveries/${customerId}`, payload, config),
+  get: (customerId) =>
+    get(`/material-deliveries/${customerId}`, {
+      validateStatus: (status) => status < 500,
+    }),
+
+  save: (customerId, payload, config) =>
+    payload?.id
+      ? put(`/material-deliveries/${customerId}`, payload, config)
+      : post(`/material-deliveries/${customerId}`, payload, config),
 };
 
+// =========================
+// INSTALLATION
+// =========================
 export const installationAPI = {
-  get: (customerId) => get(`/installations/${customerId}`, { validateStatus: (status) => status < 500 }),
-  save: (customerId, payload, config) => post(`/installations/${customerId}`, payload, config),
+  get: (customerId) =>
+    get(`/installations/${customerId}`, {
+      validateStatus: (status) => status < 500,
+    }),
+
+  save: (customerId, payload, config) =>
+    post(`/installations/${customerId}`, payload, config),
 };
 
+// =========================
+// SERVICE
+// =========================
 export const serviceAPI = {
-  // Get all services for a customer
   getServices: (projectId) => get(`/services/project/${projectId}`),
-  
-  // Create a new service
-  createService: (projectId, formData) => 
+
+  createService: (projectId, formData) =>
     post(`/services/${projectId}`, formData, {
-      headers: { "Content-Type": "multipart/form-data" }
+      headers: { "Content-Type": "multipart/form-data" },
     }),
-  
-  // Update a service
-  updateService: (serviceId, formData) => 
+
+  updateService: (serviceId, formData) =>
     put(`/services/${serviceId}`, formData, {
-      headers: { "Content-Type": "multipart/form-data" }
+      headers: { "Content-Type": "multipart/form-data" },
     }),
-  
-  // Delete a service
-  deleteService: (serviceId) => remove(`/services/${serviceId}`)
+
+  deleteService: (serviceId) => remove(`/services/${serviceId}`),
 };
 
 export default api;
