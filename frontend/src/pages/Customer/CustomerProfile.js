@@ -1184,7 +1184,7 @@ return (
                           ? URL.createObjectURL(profileImage)
                           : customer?.profile_photo
                             ? `${process.env.REACT_APP_BASE_URL}${customer.profile_photo}`
-                            : "https://via.placeholder.com/150"
+                            : "https://cdn.corenexis.com/files/c/5589175720.jpg"
                       }
                   alt="profile"
                 />
