@@ -41,7 +41,7 @@ def create_app():
         "origins": [
             "https://solar-flow-jet.vercel.app",
             "http://localhost:3000",
-            "https://sl-pusy.onrender.com"
+            "https://sl-eosin-two.vercel.app"
         ]
     }
 })
