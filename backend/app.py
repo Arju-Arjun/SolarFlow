@@ -40,7 +40,8 @@ def create_app():
     r"/api/*": {
         "origins": [
             "https://solar-flow-jet.vercel.app",
-            "http://localhost:3000"
+            "http://localhost:3000",
+            "https://sl-pusy.onrender.com"
         ]
     }
 })
