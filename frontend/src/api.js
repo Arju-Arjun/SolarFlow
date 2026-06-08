@@ -126,9 +126,9 @@ export const paymentAPI = {
   create: (payload, config) =>
     post("/payments/", payload, config),
 
-  // UPDATE payment by PAYMENT ID
-  update: (id, payload, config) =>
-    put(`/payments/${id}`, payload, config),
+  // UPDATE payment by CUSTOMER ID
+  update: (customerId, payload, config) =>
+    put(`/payments/${customerId}`, payload, config),
 };
 
 // =========================
