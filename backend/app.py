@@ -36,10 +36,14 @@ def create_app():
     mail.init_app(app)
     
 
-    CORS(app, supports_credentials=True, origins=[
-        "http://localhost:3000",
-        "https://solar-flow-jet.vercel.app"
-    ])
+    cors.init_app(app, resources={
+    r"/api/*": {
+        "origins": [
+            "https://solar-flow-jet.vercel.app",
+            "http://localhost:3000"
+        ]
+    }
+})
 
     # ================= BLUEPRINTS =================
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
