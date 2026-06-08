@@ -73,14 +73,16 @@ export const workflowAPI = {
 // SITE VISIT (ID BASED)
 // =========================
 export const siteVisitAPI = {
-  get: (id) =>
-    get(`/site-visits/${id}`, {
+  // GET site visit by CUSTOMER ID (since each customer has only one site visit)
+  get: (customerId) =>
+    get(`/site-visits/by-customer/${customerId}`, {
       validateStatus: (status) => status < 500,
     }),
 
-  save: (id, payload, config) =>
-    id
-      ? put(`/site-visits/${id}`, payload, config)
+  // SAVE site visit (uses site visit ID for PUT, or creates new with POST)
+  save: (siteVisitId, payload, config) =>
+    siteVisitId
+      ? put(`/site-visits/${siteVisitId}`, payload, config)
       : post("/site-visits/", payload, config),
 };
 
@@ -111,12 +113,12 @@ export const loanAPI = {
 };
 
 // =========================
-// PAYMENTS (FIXED - ID BASED)
+// PAYMENTS (FIXED - CUSTOMER ID BASED)
 // =========================
 export const paymentAPI = {
-  // GET payment by PAYMENT ID
-  get: (id) =>
-    get(`/payments/${id}`, {
+  // GET payment by CUSTOMER ID (since each customer has only one payment)
+  get: (customerId) =>
+    get(`/payments/by-customer/${customerId}`, {
       validateStatus: (status) => status < 500,
     }),
 

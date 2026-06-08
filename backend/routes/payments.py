@@ -241,6 +241,39 @@ def update_payment(id):
 
 
 # =========================
+# GET PAYMENT BY CUSTOMER ID (FOR FRONTEND)
+# =========================
+@payment_bp.route("/by-customer/<int:customer_id>", methods=["GET"])
+@jwt_required()
+def get_payment_by_customer(customer_id):
+    """Fetch payment by customer ID (since each customer has only one payment)"""
+    try:
+        payment = Payment.query.filter_by(customer_id=customer_id).first()
+        if not payment:
+            return jsonify({"error": "Payment not found for this customer"}), 404
+
+        payment_proofs = payment.payment_proofs if isinstance(payment.payment_proofs, list) else []
+
+        return jsonify({
+            "id": payment.id,
+            "customer_id": payment.customer_id,
+            "advance": float(payment.advance or 0),
+            "second": float(payment.second or 0),
+            "third": float(payment.third or 0),
+            "total_received": float(payment.total_received or 0),
+            "balance_due": float(payment.balance_due or 0),
+            "comments": payment.comments or "",
+            "images": payment_proofs
+        }), 200
+
+    except Exception as e:
+        print(f"Error retrieving payment by customer_id: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": f"Failed to retrieve payment: {str(e)}"}), 500
+
+
+# =========================
 # GET PAYMENT (FIXED)
 # =========================
 @payment_bp.route("/<int:id>", methods=["GET"])

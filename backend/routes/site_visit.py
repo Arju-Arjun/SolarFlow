@@ -63,6 +63,49 @@ def validate_file_type(filename, allowed_extensions=None):
     return True
 
 # =========================
+# GET SITE VISIT BY CUSTOMER ID (FOR FRONTEND)
+# =========================
+@site_visit_bp.route("/by-customer/<int:customer_id>", methods=["GET"])
+@jwt_required()
+def get_site_visit_by_customer(customer_id):
+    """Fetch site visit by customer ID (since each customer has only one site visit)"""
+    try:
+        site = SiteVisit.query.filter_by(customer_id=customer_id).first()
+        if not site:
+            return jsonify({"error": "Site visit not found for this customer"}), 404
+
+        return jsonify({
+            "id": site.id,
+            "customer_id": site.customer_id,
+            "user_id": site.user_id,
+            "panel_capacity": site.panel_capacity,
+            "system_capacity": site.system_capacity,
+            "feasibility": site.feasibility,
+            "comments": site.comments,
+            "project_cost": site.project_cost,
+            "location": site.location,
+            "quotation_file": site.quotation_file,
+            "agreement_file": site.agreement_file,
+            "aadhaar": site.aadhaar,
+            "pan": site.pan,
+            "kseb_bill": site.kseb_bill,
+            "bank_passbook": site.bank_passbook,
+            "land_tax": site.land_tax,
+            "building_tax": site.building_tax,
+            "signature": site.signature,
+            "load_enhancement": site.load_enhancement,
+            "ownership_change": site.ownership_change,
+            "images": json.loads(site.images) if site.images else [],
+            "created_at": site.created_at.isoformat() if site.created_at else None
+        }), 200
+    except Exception as e:
+        print(f"Error retrieving site visit by customer_id: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": f"Failed to retrieve site visit: {str(e)}"}), 500
+
+
+# =========================
 # GET SITE VISIT BY ID
 # =========================
 @site_visit_bp.route("/<int:id>", methods=["GET"])

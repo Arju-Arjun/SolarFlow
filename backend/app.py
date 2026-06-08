@@ -1,7 +1,7 @@
 import os
 from flask import Flask, jsonify, send_from_directory
 from dotenv import load_dotenv
-
+from flask_cors import CORS
 from config import Config
 from extensions import db, bcrypt, jwt, mail, cors
 
@@ -34,7 +34,12 @@ def create_app():
     bcrypt.init_app(app)
     jwt.init_app(app)
     mail.init_app(app)
-    cors.init_app(app)
+    
+
+    CORS(app, supports_credentials=True, origins=[
+        "http://localhost:3000",
+        "https://solar-flow-jet.vercel.app"
+    ])
 
     # ================= BLUEPRINTS =================
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
