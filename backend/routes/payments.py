@@ -229,22 +229,27 @@ def update_payment(id):
 @jwt_required()
 def get_payment(id):
     try:
-        payment = Payment.query.get_or_404(id)
+        payment = Payment.query.get(id)
+        if not payment:
+            return jsonify({"error": "Payment not found"}), 404
+
+        payment_proofs = payment.payment_proofs if isinstance(payment.payment_proofs, list) else []
 
         return jsonify({
             "id": payment.id,
             "customer_id": payment.customer_id,
-            "advance": payment.advance,
-            "second": payment.second,
-            "third": payment.third,
-            "total_received": payment.total_received,
-            "balance_due": payment.balance_due,
-            "comments": payment.comments,
-            "images": payment.payment_proofs or []
+            "advance": float(payment.advance or 0),
+            "second": float(payment.second or 0),
+            "third": float(payment.third or 0),
+            "total_received": float(payment.total_received or 0),
+            "balance_due": float(payment.balance_due or 0),
+            "comments": payment.comments or "",
+            "images": payment_proofs
         }), 200
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        print(f"Error retrieving payment: {e}")
+        return jsonify({"error": f"Failed to retrieve payment: {str(e)}"}), 500
 
 
 # =========================
