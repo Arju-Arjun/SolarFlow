@@ -102,10 +102,10 @@ const CustomerProfile = () => {
 
   const handleTabSelect = (tabKey) => {
     if (id) {
-      const path = routeTemplates[tabKey]
-        ? routeTemplates[tabKey](id)
-        : `/customer/${id}?tab=${tabKey}`;
-      navigate(path);
+      navigate({
+        pathname: `/customer/${id}`,
+        search: `?tab=${tabKey}`,
+      });
     }
     setActiveTab(tabKey);
     setMenuOpen(false);
