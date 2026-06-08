@@ -75,7 +75,7 @@ export const workflowAPI = {
 export const siteVisitAPI = {
   // GET site visit by CUSTOMER ID (since each customer has only one site visit)
   get: (customerId) =>
-    get(`/site-visits/by-customer/${customerId}`, {
+    get(`/site-visits/${customerId}`, {
       validateStatus: (status) => status < 500,
     }),
 
@@ -121,7 +121,7 @@ export const loanAPI = {
 export const paymentAPI = {
   // GET payment by CUSTOMER ID
   get: (customerId) =>
-    get(`/payments/by-customer/${customerId}`, {
+    get(`/payments/${customerId}`, {
       validateStatus: (status) => status < 500,
     }),
 

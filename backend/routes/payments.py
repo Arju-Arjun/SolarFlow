@@ -42,7 +42,7 @@ def delete_file(filepath):
 
 
 # ================= GET BY CUSTOMER =================
-@payment_bp.route("/by-customer/<int:customer_id>", methods=["GET"])
+@payment_bp.route("/<int:customer_id>", methods=["GET"])
 @jwt_required()
 def get_payment_by_customer(customer_id):
     try:
