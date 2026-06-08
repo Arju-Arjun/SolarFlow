@@ -42,6 +42,32 @@ def delete_file(filepath):
             os.remove(full_path)
 
 
+# ================= GET PAYMENT BY CUSTOMER ID =================
+@payment_bp.route("/by-customer/<int:customer_id>", methods=["GET"])
+@jwt_required()
+def get_payment_by_customer(customer_id):
+    try:
+        payment = Payment.query.filter_by(customer_id=customer_id).first()
+
+        if not payment:
+            return jsonify({"error": "Payment not found"}), 404
+
+        return jsonify({
+            "id": payment.id,
+            "customer_id": payment.customer_id,
+            "advance": payment.advance,
+            "second": payment.second,
+            "third": payment.third,
+            "total_received": payment.total_received,
+            "balance_due": payment.balance_due,
+            "comments": payment.comments,
+            "images": payment.payment_proofs or []
+        }), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 # ================= CREATE PAYMENT =================
 @payment_bp.route("/<int:customer_id>", methods=["POST"])
 @jwt_required()
