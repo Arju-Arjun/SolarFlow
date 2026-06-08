@@ -17,10 +17,17 @@ api.interceptors.request.use((config) => {
 
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
+  } else {
+    console.warn("⚠️  No token found in localStorage - API request will fail if endpoint requires auth");
   }
 
   if (config.data instanceof FormData) {
     delete config.headers["Content-Type"];
+    console.log(`[API] ${config.method.toUpperCase()} ${config.url}`, {
+      hasToken: !!token,
+      authHeader: config.headers.Authorization ? "Bearer ..." : "none"
+    });
+
   }
 
   return config;
