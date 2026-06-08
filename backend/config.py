@@ -14,8 +14,7 @@ class Config:
     SECRET_KEY = os.getenv("SECRET_KEY", "super-secret-key")
 
     SQLALCHEMY_DATABASE_URI = os.getenv(
-        "DATABASE_URL",
-        "postgresql://solar_db_oeq7_user:VDirM0tDnXsd3q5AYjCwdUcC6pBk7EwA@dpg-d8aro5ojs32c739flkmg-a.oregon-postgres.render.com/solar_db_oeq7",
+        "DATABASE_URL", f"sqlite:///{basedir / 'app.db'}"
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
