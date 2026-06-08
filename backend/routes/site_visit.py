@@ -63,7 +63,7 @@ def validate_file_type(filename, allowed_extensions=None):
     return True
 
 # =========================
-# GET SITE VISIT BY CUSTOMER ID (FOR FRONTEND)
+# GET SITE VISIT BY CUSTOMER ID (FOR FRONTEND ..)
 # =========================
 @site_visit_bp.route("/<int:customer_id>", methods=["GET"])
 @jwt_required()
