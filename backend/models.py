@@ -6,7 +6,7 @@ import json
 # =========================
 # CONSTANTS
 # =========================
-UPLOAD_FOLDER = "backend/static/uploads/profile_photo"
+
 DEFAULT_IMAGE = "/backend/static/uploads/profile_photo/default.png"
 
 
@@ -78,14 +78,15 @@ class Customer(db.Model):
 
     # ================= SAFE IMAGE HANDLING =================
     def get_safe_image(self):
-        if self.profile_photo:
-            filename = self.profile_photo.replace("/backend/static/uploads/profile_photo", "")
-            full_path = os.path.join(UPLOAD_FOLDER, filename)
-
-            if os.path.exists(full_path):
-                return self.profile_photo
-
-        return DEFAULT_IMAGE
+        # Fallback to default if no image reference is assigned
+        if not self.profile_photo:
+            return DEFAULT_IMAGE
+            
+        # If it points to an external cloud storage resource, return it directly
+        if self.profile_photo.startswith("http://") or self.profile_photo.startswith("https://"):
+            return self.profile_photo
+            
+        return self.profile_photo
 
     def to_dict(self):
         return {
@@ -122,7 +123,6 @@ class SiteVisit(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
 
-    # 🔗 FOREIGN KEY RELATIONSHIPS
     customer_id = db.Column(db.Integer, db.ForeignKey("customers.id"), nullable=False, unique=True)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
 
@@ -133,7 +133,6 @@ class SiteVisit(db.Model):
 
     # ================= IMAGES =================
     images = db.Column(db.Text, nullable=True)  
-    # store JSON string or comma-separated paths
 
     # ================= TECH DETAILS =================
     panel_capacity = db.Column(db.Float, nullable=True)
@@ -228,10 +227,6 @@ class Mnre(db.Model):
         }
 
 
-
-         # ============== Payment ========================
-#balance_due DECIMAL(10,2) DEFAULT 0
-
 class Payment(db.Model):
     __tablename__ = "payments"
 
@@ -251,8 +246,6 @@ class Payment(db.Model):
     total_received = db.Column(db.Float, nullable=True, default=0)
 
     comments = db.Column(db.Text, nullable=True)
-
-    # ✅ multiple image uploads (BEST WAY)
     payment_proofs = db.Column(db.JSON, nullable=True, default=list)
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -278,9 +271,6 @@ class Payment(db.Model):
             "payment_proofs": self.payment_proofs,
         }
     
-
-
-
 
 
 class Loan(db.Model):
@@ -342,12 +332,8 @@ class Loan(db.Model):
     
 
 
-# KSEB
-
 class Kseb(db.Model):
     __tablename__ = "kseb_data"
-
-   #id, customer_id, name_change, name_change_status, name_change_comment, load_enhance, load_enhance_status, load_enhance_comment, feasibility, fee_paid, created_at, updated_at
 
     id = db.Column(db.Integer, primary_key=True)
     customer_id = db.Column(db.Integer, db.ForeignKey("customers.id"), nullable=False, unique=True)
@@ -380,16 +366,12 @@ class Kseb(db.Model):
         }
 
 
-# =========================
-# KSEB REGISTRATION & COMMISSIONING MODEL
-# =========================
 class KsebRegistration(db.Model):
     __tablename__ = "kseb_registrations"
 
     id = db.Column(db.Integer, primary_key=True)
     customer_id = db.Column(db.Integer, db.ForeignKey("customers.id"), nullable=False, unique=True)
     
-    # Toggle fields
     registration_submitted = db.Column(db.Boolean, default=False)
     completion_submitted = db.Column(db.Boolean, default=False)
     agreement_submitted = db.Column(db.Boolean, default=False)
@@ -398,14 +380,11 @@ class KsebRegistration(db.Model):
     wifi = db.Column(db.Boolean, default=False)
     wifi_configured = db.Column(db.Boolean, default=False)
     
-    # Comments
     comments = db.Column(db.Text, nullable=True)
     
-    # Meta
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
-    # Relationships
     customer = db.relationship("Customer", backref="kseb_registration", uselist=False)
     
     def to_dict(self):
@@ -425,28 +404,21 @@ class KsebRegistration(db.Model):
         }
 
 
-# =========================
-# DCR MODEL
-# =========================
 class Dcr(db.Model):
     __tablename__ = "dcrs"
 
     id = db.Column(db.Integer, primary_key=True)
     customer_id = db.Column(db.Integer, db.ForeignKey("customers.id"), nullable=False, unique=True)
     
-    # Toggle fields
     certificate_received = db.Column(db.Boolean, default=False)
     certificate_claimed = db.Column(db.Boolean, default=False)
     certificate_sold = db.Column(db.Boolean, default=False)
     
-    # Comments
     comments = db.Column(db.Text, nullable=True)
     
-    # Meta
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
-    # Relationships
     customer = db.relationship("Customer", backref="dcr", uselist=False)
     
     def to_dict(self):
@@ -462,32 +434,24 @@ class Dcr(db.Model):
         }
 
 
-# =========================
-# MNRE INSTALLATION DETAILS MODEL
-# =========================
 class MnreInstallation(db.Model):
     __tablename__ = "mnre_installations"
 
     id = db.Column(db.Integer, primary_key=True)
     customer_id = db.Column(db.Integer, db.ForeignKey("customers.id"), nullable=False, unique=True)
     
-    # Installation Status Section
     installation_status = db.Column(db.String(50), nullable=True)
     installation_comments = db.Column(db.Text, nullable=True)
     
-    # Approval Status Section
     approval_status = db.Column(db.String(50), nullable=True)
     approval_comments = db.Column(db.Text, nullable=True)
     
-    # Subsidy Status Section
     subsidy_status = db.Column(db.String(50), nullable=True)
     subsidy_comments = db.Column(db.Text, nullable=True)
     
-    # Meta
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
-    # Relationships
     customer = db.relationship("Customer", backref="mnre_installation", uselist=False)
     
     def to_dict(self):
@@ -505,8 +469,6 @@ class MnreInstallation(db.Model):
         }
 
 
-
-
 class Service(db.Model):
     __tablename__ = "services"
 
@@ -520,7 +482,6 @@ class Service(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, onupdate=datetime.utcnow)
 
-    # Relationship
     customer = db.relationship("Customer", backref="services")
 
     def to_dict(self):
@@ -572,7 +533,6 @@ class MaterialDelivery(db.Model):
             "updated_at": self.updated_at.isoformat() if self.updated_at else None
         }
     
-
 
 
 class Installation(db.Model):

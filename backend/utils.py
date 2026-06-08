@@ -3,8 +3,8 @@ from flask import current_app
 from flask_mail import Message
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from extensions import mail
-
-
+import cloudinary
+import cloudinary.uploader
 
 def _get_serializer():
     secret = current_app.config.get("SECRET_KEY")
@@ -56,3 +56,29 @@ def send_email(subject, recipients, body, html=None):
         import traceback
         traceback.print_exc()
         return False
+
+
+# ================= FILE UPLOAD FUNCTION =================
+ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'webp'}
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def upload_to_cloud(file, folder_name):
+    """
+    Accepts a file stream object and an destination folder name.
+    Uploads directly to Cloudinary and returns the secure HTTPS link string.
+    """
+    if file and allowed_file(file.filename):
+        try:
+            # resource_type="auto" allows Cloudinary to process txt, pdf, and images automatically
+            upload_result = cloudinary.uploader.upload(
+                file, 
+                folder=folder_name, 
+                resource_type="auto"
+            )
+            return upload_result.get("secure_url")
+        except Exception as e:
+            print("CLOUDINARY UPLOAD ERROR:", str(e))
+            return None
+    return None

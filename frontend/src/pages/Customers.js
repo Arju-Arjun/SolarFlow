@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { customersAPI, workflowAPI } from "../api";
+import { customersAPI } from "../api";
 import WorkflowDiagram from "../components/WorkflowDiagram";
 import { FaHome } from "react-icons/fa";
 
@@ -60,7 +60,8 @@ function Customers() {
     setWorkflowError("");
 
     try {
-      const res = await workflowAPI.get(customer.id);
+      // we direct the flow to our optimized unified customer blueprint route
+      const res = await customersAPI.getWorkflow(customer.id);
       setWorkflowData(res.data);
     } catch (err) {
       console.log(
@@ -206,4 +207,3 @@ function Customers() {
 }
 
 export default Customers;
-

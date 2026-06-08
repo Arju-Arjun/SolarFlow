@@ -16,6 +16,8 @@ from routes.service import service_bp
 from routes.material_delivery import material_delivery_bp
 from routes.installation import installation_bp
 
+import cloudinary
+
 load_dotenv()
 
 
@@ -29,6 +31,13 @@ def create_app():
     # ================= CONFIG =================
     app.config.from_object(Config)
 
+    # ================= CLOUDINARY CONFIG =================
+    cloudinary.config(
+        cloud_name=os.environ.get("CLOUDINARY_CLOUD_NAME"),
+        api_key=os.environ.get("CLOUDINARY_API_KEY"),
+        api_secret=os.environ.get("CLOUDINARY_API_SECRET")
+    )
+
     # ================= EXTENSIONS =================
     db.init_app(app)
     bcrypt.init_app(app)
@@ -37,27 +46,28 @@ def create_app():
     
 
     cors.init_app(app, resources={
-    r"/api/*": {
-        "origins": [
-            "https://solar-flow-jet.vercel.app",
-            "http://localhost:3000",
-            "https://sl-eosin-two.vercel.app"
-        ]
-    }
-})
+        r"/api/*": {
+            "origins": [
+                "https://solar-flow-jet.vercel.app",
+                "http://localhost:3000",
+                "https://sl-eosin-two.vercel.app"
+            ]
+        }
+    })
 
     # ================= BLUEPRINTS =================
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
-    app.register_blueprint(customer_bp)
-    app.register_blueprint(site_visit_bp)
-    app.register_blueprint(mnre_bp)
-    app.register_blueprint(payment_bp)
-    app.register_blueprint(loan_bp)
-    app.register_blueprint(kseb_bp)
-    app.register_blueprint(service_bp)
-    app.register_blueprint(material_delivery_bp)
-    app.register_blueprint(installation_bp)
-    # ================= AUTO CREATE TABLES (OPTION 2) =================
+    app.register_blueprint(customer_bp, url_prefix="/api/customers")
+    app.register_blueprint(site_visit_bp, url_prefix="/api/site-visits")
+    app.register_blueprint(mnre_bp, url_prefix="/api/mnre")
+    app.register_blueprint(payment_bp, url_prefix="/api/payments")
+    app.register_blueprint(loan_bp, url_prefix="/api/loans")
+    app.register_blueprint(kseb_bp, url_prefix="/api/kseb")
+    app.register_blueprint(service_bp, url_prefix="/api/services")
+    app.register_blueprint(material_delivery_bp, url_prefix="/api/material-deliveries")
+    app.register_blueprint(installation_bp, url_prefix="/api/installations")
+    
+    # ================= AUTO CREATE TABLES =================
     with app.app_context():
         db.create_all()
 
@@ -76,12 +86,10 @@ def create_app():
     # ================= STATIC FILES =================
     @app.route("/backend/static/uploads/<path:filename>")
     def uploaded_file(filename):
-        # Check backend/backend/static/uploads first
         backend_upload_path = os.path.join(os.path.dirname(__file__), "static", "uploads")
         if os.path.exists(os.path.join(backend_upload_path, filename)):
             return send_from_directory(backend_upload_path, filename)
         
-        # Check project root static/uploads
         project_root = os.path.dirname(os.path.dirname(__file__))
         root_upload_path = os.path.join(project_root, "static", "uploads")
         if os.path.exists(os.path.join(root_upload_path, filename)):
@@ -121,7 +129,6 @@ def create_app():
 if __name__ == "__main__":
     app = create_app()
 
-    # Ensure upload folder exists
     upload_path = os.path.join(os.path.dirname(__file__), "static", "uploads")
     os.makedirs(upload_path, exist_ok=True)
 

@@ -27,7 +27,6 @@ api.interceptors.request.use((config) => {
       hasToken: !!token,
       authHeader: config.headers.Authorization ? "Bearer ..." : "none"
     });
-
   }
 
   return config;
@@ -65,6 +64,8 @@ export const customersAPI = {
   create: (payload) => post("/customers/", payload),
   update: (id, payload) => put(`/customers/${id}`, payload),
   remove: (id) => remove(`/customers/${id}`),
+  // Added helper function for Customers.js unified workflow mapping
+  getWorkflow: (id) => get(`/customers/${id}/workflow`),
 };
 
 // =========================
@@ -80,13 +81,11 @@ export const workflowAPI = {
 // SITE VISIT (ID BASED)
 // =========================
 export const siteVisitAPI = {
-  // GET site visit by CUSTOMER ID (since each customer has only one site visit)
   get: (customerId) =>
     get(`/site-visits/${customerId}`, {
       validateStatus: (status) => status < 500,
     }),
 
-  // SAVE site visit (uses site visit ID for PUT, or creates new with POST)
   save: (siteVisitId, payload, config) =>
     siteVisitId
       ? put(`/site-visits/${siteVisitId}`, payload, config)
@@ -94,7 +93,7 @@ export const siteVisitAPI = {
 };
 
 // =========================
-// MNRE (customer-based still OK)
+// MNRE
 // =========================
 export const mnreAPI = {
   get: (customerId) => get(`/mnre/${customerId}`),
@@ -120,27 +119,26 @@ export const loanAPI = {
 };
 
 // =========================
-// PAYMENTS (FIXED - CUSTOMER ID BASED)
-// =========================
-// =========================
-// PAYMENTS (FIXED - CUSTOMER BASED SYSTEM)
+// PAYMENTS (FIXED - UNIFIED SAVE WRAPPER)
 // =========================
 export const paymentAPI = {
-  // GET payment by CUSTOMER ID
   get: (customerId) =>
     get(`/payments/${customerId}`, {
       validateStatus: (status) => status < 500,
     }),
 
-  // CREATE payment (customer_id inside payload)
   create: (payload, config) =>
     post("/payments/", payload, config),
 
-  // UPDATE payment by CUSTOMER ID
   update: (customerId, payload, config) =>
     put(`/payments/${customerId}`, payload, config),
 
-  // OPTIONAL: DELETE payment by CUSTOMER ID
+  // Unified save handler matching CustomerProfile updates
+  save: (customerId, payload, isUpdate, config) =>
+    isUpdate
+      ? put(`/payments/${customerId}`, payload, config)
+      : post("/payments/", payload, config),
+
   remove: (customerId) =>
     remove(`/payments/${customerId}`),
 };
@@ -181,14 +179,12 @@ export const dcrAPI = {
 // =========================
 export const materialDeliveryAPI = {
   get: (customerId) =>
-    get(`/material-deliveries/${customerId}`, {
+    get(`/material-delivery/${customerId}`, {
       validateStatus: (status) => status < 500,
     }),
 
   save: (customerId, payload, config) =>
-    payload?.id
-      ? put(`/material-deliveries/${customerId}`, payload, config)
-      : post(`/material-deliveries/${customerId}`, payload, config),
+    post(`/material-delivery/${customerId}`, payload, config),
 };
 
 // =========================

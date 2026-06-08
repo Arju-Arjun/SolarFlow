@@ -15,7 +15,7 @@ def _valid_email(email):
 def _validate_passwords(password, confirm_password):
     return bool(password and confirm_password and password == confirm_password and len(password) >= 6)
 
-# ================= ORIGINAL REGISTER =================
+# ================= REGISTER =================
 @auth_bp.route("/register", methods=["POST"])
 def register():
     data = request.get_json() or {}
@@ -56,12 +56,6 @@ def login():
     access_token = create_access_token(identity=str(user.id))
     return jsonify({"token": access_token, "user": user.to_dict()}), 200
 
-
-
-
-
-
-
 # ================= FORGOT PASSWORD =================
 @auth_bp.route("/forgot-password", methods=["POST"])
 def forgot_password():
@@ -78,7 +72,6 @@ def forgot_password():
     token = generate_reset_token(user.email)
     frontend_host = current_app.config.get("FRONTEND_URL") or request.host_url.rstrip("/")
     reset_url = f"{frontend_host}/reset-password?token={token}"
-    print(f"\n\n\n\nGenerated reset URL: {reset_url}\n\n\n\n")
 
     message = f"Reset your password: {reset_url}"
     send_email("Password Reset", [user.email], message)

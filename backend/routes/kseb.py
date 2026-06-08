@@ -2,23 +2,8 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required
 from extensions import db
 from models import Kseb, Customer, KsebRegistration, Dcr
-from werkzeug.utils import secure_filename
-import os
-import uuid
-from datetime import datetime
 
-
-
-
-# =========================
-# BLUEPRINT
-# =========================
-kseb_bp = Blueprint(
-    "kseb_bp",
-    __name__,
-    url_prefix="/api/kseb"
-)
-
+kseb_bp = Blueprint("kseb_bp", __name__, url_prefix="/api/kseb")
 
 def normalize_boolean_field(value):
     if isinstance(value, bool):
@@ -27,15 +12,9 @@ def normalize_boolean_field(value):
         return False
     return str(value).strip().lower() in ("true", "yes", "1", "y", "on")
 
-
 def to_yes_no(value):
     return "Yes" if normalize_boolean_field(value) else "No"
 
-
-# =========================
-# Create or Update KSEB Data
-# =========================
-#id, customer_id, name_change, name_change_status, name_change_comment, load_enhance, load_enhance_status, load_enhance_comment, feasibility, fee_paid, created_at, updated_at
 @kseb_bp.route("/<int:customer_id>", methods=["POST"])
 @jwt_required()
 def create_or_update_kseb(customer_id):
@@ -43,11 +22,9 @@ def create_or_update_kseb(customer_id):
     if not customer:
         return jsonify({"error": "Customer not found"}), 404
 
-    # check existing
     kseb = Kseb.query.filter_by(customer_id=customer_id).first()
-
-    # JSON DATA
-    data = request.get_json()
+    data = request.get_json() or {}
+    
     name_change = to_yes_no(data.get("name_change", False))
     name_change_status = data.get("name_change_status", "Pending")
     name_change_comment = data.get("name_change_comment", "")
@@ -57,22 +34,14 @@ def create_or_update_kseb(customer_id):
     feasibility = to_yes_no(data.get("feasibility", False))
     fee_paid = to_yes_no(data.get("fee_paid", False))
 
-    # CREATE
     if not kseb:
         kseb = Kseb(
-            customer_id=customer_id,
-            name_change=name_change,
-            name_change_status=name_change_status,
-            name_change_comment=name_change_comment,
-            load_enhance=load_enhance,
-            load_enhance_status=load_enhance_status,
-            load_enhance_comment=load_enhance_comment,
-            feasibility=feasibility,
-            fee_paid=fee_paid
+            customer_id=customer_id, name_change=name_change, name_change_status=name_change_status,
+            name_change_comment=name_change_comment, load_enhance=load_enhance,
+            load_enhance_status=load_enhance_status, load_enhance_comment=load_enhance_comment,
+            feasibility=feasibility, fee_paid=fee_paid
         )
         db.session.add(kseb)
-
-        # UPDATE
     else:
         kseb.name_change = name_change
         kseb.name_change_status = name_change_status
@@ -86,8 +55,6 @@ def create_or_update_kseb(customer_id):
     db.session.commit()
     return jsonify({"message": "KSEB data updated successfully"}), 200
 
-
-# =========================
 @kseb_bp.route("/<int:customer_id>", methods=["GET"])
 @jwt_required()
 def get_Kseb(customer_id):
@@ -108,60 +75,40 @@ def get_Kseb(customer_id):
         "fee_paid": normalize_boolean_field(kseb.fee_paid)
     }), 200
 
-# =========================
-# DELETE KSEB data for a customer
 @kseb_bp.route("/<int:customer_id>", methods=["DELETE"])
 @jwt_required()
 def delete_Kseb(customer_id):
     kseb = Kseb.query.filter_by(customer_id=customer_id).first()
     if not kseb:
         return jsonify({"error": "KSEB data not found for this customer"}), 404
-
     db.session.delete(kseb)
     db.session.commit()
     return jsonify({"message": "KSEB data deleted successfully"}), 200
 
-
-# =========================
-# KSEB REGISTRATION & COMMISSIONING ENDPOINTS
-# =========================
-
-# GET KSEB Registration data
 @kseb_bp.route("/registration/<int:customer_id>", methods=["GET"])
 @jwt_required()
 def get_kseb_registration(customer_id):
-    """Fetch KSEB Registration & Commissioning data for a customer"""
     customer = Customer.query.get(customer_id)
     if not customer:
         return jsonify({"error": "Customer not found"}), 404
-
     kseb_reg = KsebRegistration.query.filter_by(customer_id=customer_id).first()
-    
     if not kseb_reg:
         return jsonify(None), 200
-
     return jsonify(kseb_reg.to_dict()), 200
 
-
-# CREATE or UPDATE KSEB Registration data
 @kseb_bp.route("/registration/<int:customer_id>", methods=["POST", "PUT"])
 @jwt_required()
 def create_or_update_kseb_registration(customer_id):
-    """Create or update KSEB Registration & Commissioning data"""
     customer = Customer.query.get(customer_id)
     if not customer:
         return jsonify({"error": "Customer not found"}), 404
 
     kseb_reg = KsebRegistration.query.filter_by(customer_id=customer_id).first()
+    data = request.get_json() or {}
     
-    # Get JSON data
-    data = request.get_json()
-    
-    # If creating new record
     if not kseb_reg:
         kseb_reg = KsebRegistration(customer_id=customer_id)
     
-    # Update fields
     kseb_reg.registration_submitted = data.get("registration_submitted", False)
     kseb_reg.completion_submitted = data.get("completion_submitted", False)
     kseb_reg.agreement_submitted = data.get("agreement_submitted", False)
@@ -173,70 +120,45 @@ def create_or_update_kseb_registration(customer_id):
     
     db.session.add(kseb_reg)
     db.session.commit()
-    
-    message = "KSEB Registration data created successfully" if request.method == "POST" else "KSEB Registration data updated successfully"
-    return jsonify({"message": message, "data": kseb_reg.to_dict()}), 200
+    return jsonify({"message": "KSEB Registration data processing updated", "data": kseb_reg.to_dict()}), 200
 
-
-# DELETE KSEB Registration data
 @kseb_bp.route("/registration/<int:customer_id>", methods=["DELETE"])
 @jwt_required()
 def delete_kseb_registration(customer_id):
-    """Delete KSEB Registration & Commissioning data"""
     customer = Customer.query.get(customer_id)
     if not customer:
         return jsonify({"error": "Customer not found"}), 404
-
     kseb_reg = KsebRegistration.query.filter_by(customer_id=customer_id).first()
     if not kseb_reg:
         return jsonify({"error": "KSEB Registration data not found"}), 404
-
     db.session.delete(kseb_reg)
     db.session.commit()
-    
     return jsonify({"message": "KSEB Registration data deleted successfully"}), 200
 
-
-# =========================
-# DCR ENDPOINTS
-# =========================
-
-# GET DCR data
 @kseb_bp.route("/dcr/<int:customer_id>", methods=["GET"])
 @jwt_required()
 def get_dcr(customer_id):
-    """Fetch DCR data for a customer"""
     customer = Customer.query.get(customer_id)
     if not customer:
         return jsonify({"error": "Customer not found"}), 404
-
     dcr = Dcr.query.filter_by(customer_id=customer_id).first()
-    
     if not dcr:
         return jsonify(None), 200
-
     return jsonify(dcr.to_dict()), 200
 
-
-# CREATE or UPDATE DCR data
 @kseb_bp.route("/dcr/<int:customer_id>", methods=["POST", "PUT"])
 @jwt_required()
 def create_or_update_dcr(customer_id):
-    """Create or update DCR data"""
     customer = Customer.query.get(customer_id)
     if not customer:
         return jsonify({"error": "Customer not found"}), 404
 
     dcr = Dcr.query.filter_by(customer_id=customer_id).first()
+    data = request.get_json() or {}
     
-    # Get JSON data
-    data = request.get_json()
-    
-    # If creating new record
     if not dcr:
         dcr = Dcr(customer_id=customer_id)
     
-    # Update fields
     dcr.certificate_received = data.get("certificate_received", False)
     dcr.certificate_claimed = data.get("certificate_claimed", False)
     dcr.certificate_sold = data.get("certificate_sold", False)
@@ -244,26 +166,17 @@ def create_or_update_dcr(customer_id):
     
     db.session.add(dcr)
     db.session.commit()
-    
-    message = "DCR data created successfully" if request.method == "POST" else "DCR data updated successfully"
-    return jsonify({"message": message, "data": dcr.to_dict()}), 200
+    return jsonify({"message": "DCR tracking data saved", "data": dcr.to_dict()}), 200
 
-
-# DELETE DCR data
 @kseb_bp.route("/dcr/<int:customer_id>", methods=["DELETE"])
 @jwt_required()
 def delete_dcr(customer_id):
-    """Delete DCR data"""
     customer = Customer.query.get(customer_id)
     if not customer:
         return jsonify({"error": "Customer not found"}), 404
-
     dcr = Dcr.query.filter_by(customer_id=customer_id).first()
     if not dcr:
         return jsonify({"error": "DCR data not found"}), 404
-
     db.session.delete(dcr)
     db.session.commit()
-    
     return jsonify({"message": "DCR data deleted successfully"}), 200
-
