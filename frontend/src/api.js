@@ -3,7 +3,7 @@ import axios from "axios";
 const api = axios.create({
   baseURL:
     process.env.REACT_APP_API_URL ||
-    "https://solarflow-backend-6yjl.onrender.com/api",
+    "https://sl-pusy.onrender.com/api",
   headers: {
     "Content-Type": "application/json",
   },
