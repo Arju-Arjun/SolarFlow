@@ -60,6 +60,21 @@ const CustomerProfile = () => {
     { key: "service", label: "Service" },
   ];
 
+  const routeTemplates = {
+    profile: (id) => `/customer/${id}?tab=profile`,
+    site: (id) => `/customer/${id}?tab=site`,
+    mnre: (id) => `/customer/${id}?tab=mnre`,
+    payment: (id) => `/customer/${id}?tab=payment`,
+    loan: (id) => `/customer/${id}?tab=loan`,
+    kseb: (id) => `/customer/${id}?tab=kseb`,
+    material_delivery: (id) => `/customer/${id}?tab=material_delivery`,
+    installation: (id) => `/customer/${id}?tab=installation`,
+    kseb_registration: (id) => `/customer/${id}?tab=kseb_registration`,
+    dcr: (id) => `/customer/${id}?tab=dcr`,
+    mnre_installation: (id) => `/customer/${id}?tab=mnre_installation`,
+    service: (id) => `/customer/${id}?tab=service`,
+  };
+
   useEffect(() => {
     const tabParam = new URLSearchParams(location.search).get("tab");
     const validTabKeys = [
@@ -86,9 +101,12 @@ const CustomerProfile = () => {
   }, [location.search]);
 
   const handleTabSelect = (tabKey) => {
-    const params = new URLSearchParams(location.search);
-    params.set("tab", tabKey);
-    navigate(`${location.pathname}?${params.toString()}`, { replace: false });
+    if (id) {
+      const path = routeTemplates[tabKey]
+        ? routeTemplates[tabKey](id)
+        : `/customer/${id}?tab=${tabKey}`;
+      navigate(path);
+    }
     setActiveTab(tabKey);
     setMenuOpen(false);
   };
