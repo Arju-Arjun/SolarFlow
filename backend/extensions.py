@@ -11,4 +11,9 @@ bcrypt = Bcrypt()
 jwt = JWTManager()
 mail = Mail()
 migrate = Migrate()
-cors = CORS(origins=["https://solar-flow-jet.vercel.app"], supports_credentials=True)
+cors = CORS(
+    origins=["https://solar-flow-jet.vercel.app", "http://localhost:3000", "http://localhost:5000"],
+    supports_credentials=True,
+    allow_headers=["Content-Type", "Authorization"],
+    methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
+)

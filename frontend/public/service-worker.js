@@ -38,11 +38,16 @@ self.addEventListener("fetch", (event) => {
   if (event.request.url.includes("/api/") || 
       !event.request.url.startsWith(self.location.origin)) {
     event.respondWith(
-      fetch(event.request).catch(() => {
-        // Gracefully handle network failures for API calls
+      fetch(event.request).catch((error) => {
+        console.warn("Network request failed for:", event.request.url, error);
+        // Gracefully handle network failures for API calls (use 503 Service Unavailable)
         return new Response(
-          JSON.stringify({ error: "Network request failed" }),
-          { status: 0, statusText: "Service Worker" }
+          JSON.stringify({ error: "Network request failed. Backend may be unavailable." }),
+          { 
+            status: 503, 
+            statusText: "Service Unavailable",
+            headers: { "Content-Type": "application/json" }
+          }
         );
       })
     );
@@ -70,7 +75,15 @@ self.addEventListener("fetch", (event) => {
           if (event.request.mode === "navigate") {
             return caches.match("/index.html");
           }
-          return new Response("Network request failed", { status: 0 });
+          // Return valid 503 status instead of 0
+          return new Response(
+            JSON.stringify({ error: "Network request failed" }),
+            { 
+              status: 503, 
+              statusText: "Service Unavailable",
+              headers: { "Content-Type": "application/json" }
+            }
+          );
         });
     })
   );

@@ -92,6 +92,18 @@ def create_app():
     def expired_token(jwt_header, jwt_payload):
         return jsonify({"message": "Token expired"}), 401
 
+    # ================= GLOBAL ERROR HANDLERS =================
+    @app.errorhandler(404)
+    def not_found(error):
+        return jsonify({"error": "Resource not found"}), 404
+
+    @app.errorhandler(500)
+    def internal_error(error):
+        print(f"Internal Server Error: {str(error)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": "Internal server error", "message": str(error)}), 500
+
     return app
 
 

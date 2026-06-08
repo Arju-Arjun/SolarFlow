@@ -110,7 +110,12 @@ def create_payment():
 
         if file_paths:
             payment.payment_proofs = file_paths
-            db.session.commit()
+        else:
+            payment.payment_proofs = []
+        db.session.commit()
+
+        # Ensure payment_proofs is always a list
+        proofs = payment.payment_proofs if isinstance(payment.payment_proofs, list) else []
 
         return jsonify({
             "message": "Payment created successfully",
@@ -123,11 +128,15 @@ def create_payment():
                 "total_received": payment.total_received,
                 "balance_due": payment.balance_due,
                 "comments": payment.comments,
-                "images": payment.payment_proofs or []
+                "images": proofs
             }
         }), 201
 
     except Exception as e:
+        db.session.rollback()
+        print(f"Error creating payment: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
 
@@ -172,14 +181,17 @@ def update_payment(id):
 
         # FILES
         files = request.files.getlist("files")
-        final_images = payment.payment_proofs or []
+        final_images = payment.payment_proofs if isinstance(payment.payment_proofs, list) else []
 
         existing_images_param = data.get("existing_images")
         if existing_images_param:
             try:
                 final_images = json.loads(existing_images_param)
-            except:
-                pass
+                if not isinstance(final_images, list):
+                    final_images = []
+            except Exception as e:
+                print(f"Error parsing existing_images: {e}")
+                final_images = []
 
         for file in files:
             if file and file.filename:
@@ -191,16 +203,19 @@ def update_payment(id):
         if deleted_images:
             try:
                 deleted_list = json.loads(deleted_images)
-                final_images = [img for img in final_images if img not in deleted_list]
-
-                for img in deleted_list:
-                    delete_file(img)
-            except:
-                pass
+                if isinstance(deleted_list, list):
+                    final_images = [img for img in final_images if img not in deleted_list]
+                    for img in deleted_list:
+                        delete_file(img)
+            except Exception as e:
+                print(f"Error parsing deleted_images: {e}")
 
         payment.payment_proofs = final_images
 
         db.session.commit()
+
+        # Ensure it's serialized as list
+        proofs = payment.payment_proofs if isinstance(payment.payment_proofs, list) else []
 
         return jsonify({
             "message": "Payment updated successfully",
@@ -213,12 +228,15 @@ def update_payment(id):
                 "total_received": payment.total_received,
                 "balance_due": payment.balance_due,
                 "comments": payment.comments,
-                "images": payment.payment_proofs or []
+                "images": proofs
             }
         }), 200
 
     except Exception as e:
         db.session.rollback()
+        print(f"Error updating payment: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
 
