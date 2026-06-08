@@ -60,21 +60,6 @@ const CustomerProfile = () => {
     { key: "service", label: "Service" },
   ];
 
-  const routeTemplates = {
-    profile: (id) => `/customer/${id}?tab=profile`,
-    site: (id) => `/customer/${id}?tab=site`,
-    mnre: (id) => `/customer/${id}?tab=mnre`,
-    payment: (id) => `/customer/${id}?tab=payment`,
-    loan: (id) => `/customer/${id}?tab=loan`,
-    kseb: (id) => `/customer/${id}?tab=kseb`,
-    material_delivery: (id) => `/customer/${id}?tab=material_delivery`,
-    installation: (id) => `/customer/${id}?tab=installation`,
-    kseb_registration: (id) => `/customer/${id}?tab=kseb_registration`,
-    dcr: (id) => `/customer/${id}?tab=dcr`,
-    mnre_installation: (id) => `/customer/${id}?tab=mnre_installation`,
-    service: (id) => `/customer/${id}?tab=service`,
-  };
-
   useEffect(() => {
     const tabParam = new URLSearchParams(location.search).get("tab");
     const validTabKeys = [
@@ -101,12 +86,6 @@ const CustomerProfile = () => {
   }, [location.search]);
 
   const handleTabSelect = (tabKey) => {
-    if (id) {
-      navigate({
-        pathname: `/customer/${id}`,
-        search: `?tab=${tabKey}`,
-      });
-    }
     setActiveTab(tabKey);
     setMenuOpen(false);
   };
@@ -1179,18 +1158,18 @@ return (
         {/* ================= TAB MENU ================= */}
         {!isMobile && (
         <div className="tab-menu">
-          <button className={activeTab === "profile" ? "active" : ""} onClick={() => handleTabSelect("profile")}>Profile</button>
-          <button className={activeTab === "site" ? "active" : ""} onClick={() => handleTabSelect("site")}>Site Visit</button>
-          <button className={activeTab === "mnre" ? "active" : ""} onClick={() => handleTabSelect("mnre")}>MNRE Profile</button>
-          <button className={activeTab === "payment" ? "active" : ""} onClick={() => handleTabSelect("payment")}>Payment Flow</button>
-          <button className={activeTab === "loan" ? "active" : ""} onClick={() => handleTabSelect("loan")}>Bank Loan</button>
-          <button className={activeTab === "kseb" ? "active" : ""} onClick={() => handleTabSelect("kseb")}>KSEB</button>
-          <button className={activeTab === "material_delivery" ? "active" : ""} onClick={() => handleTabSelect("material_delivery")}>Material Delivery</button>
-          <button className={activeTab === "installation" ? "active" : ""} onClick={() => handleTabSelect("installation")}>Installation</button>
-          <button className={activeTab === "kseb_registration" ? "active" : ""} onClick={() => handleTabSelect("kseb_registration")}>KSEB Registration & Commissioning</button>
-          <button className={activeTab === "dcr" ? "active" : ""} onClick={() => handleTabSelect("dcr")}>DCR</button>
-          <button className={activeTab === "mnre_installation" ? "active" : ""} onClick={() => handleTabSelect("mnre_installation")}>MNRE Installation Details</button>
-          <button className={activeTab === "service" ? "active" : ""} onClick={() => handleTabSelect("service")}>Service</button>
+          <button className={activeTab === "profile" ? "active" : ""} onClick={() => setActiveTab("profile")}>Profile</button>
+          <button className={activeTab === "site" ? "active" : ""} onClick={() => setActiveTab("site")}>Site Visit</button>
+          <button className={activeTab === "mnre" ? "active" : ""} onClick={() => setActiveTab("mnre")}>MNRE Profile</button>
+          <button className={activeTab === "payment" ? "active" : ""} onClick={() => setActiveTab("payment")}>Payment Flow</button>
+          <button className={activeTab === "loan" ? "active" : ""} onClick={() => setActiveTab("loan")}>Bank Loan</button>
+          <button className={activeTab === "kseb" ? "active" : ""} onClick={() => setActiveTab("kseb")}>KSEB</button>
+          <button className={activeTab === "material_delivery" ? "active" : ""} onClick={() => setActiveTab("material_delivery")}>Material Delivery</button>
+          <button className={activeTab === "installation" ? "active" : ""} onClick={() => setActiveTab("installation")}>Installation</button>
+          <button className={activeTab === "kseb_registration" ? "active" : ""} onClick={() => setActiveTab("kseb_registration")}>KSEB Registration & Commissioning</button>
+          <button className={activeTab === "dcr" ? "active" : ""} onClick={() => setActiveTab("dcr")}>DCR</button>
+          <button className={activeTab === "mnre_installation" ? "active" : ""} onClick={() => setActiveTab("mnre_installation")}>MNRE Installation Details</button>
+          <button className={activeTab === "service" ? "active" : ""} onClick={() => setActiveTab("service")}>Service</button>
         </div>
         )}
 

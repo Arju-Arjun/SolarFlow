@@ -65,7 +65,7 @@ def validate_file_type(filename, allowed_extensions=None):
 # =========================
 # GET SITE VISIT BY CUSTOMER ID (FOR FRONTEND)
 # =========================
-@site_visit_bp.route("/by-customer/<int:customer_id>", methods=["GET"])
+@site_visit_bp.route("/<int:customer_id>", methods=["GET"])
 @jwt_required()
 def get_site_visit_by_customer(customer_id):
     """Fetch site visit by customer ID (since each customer has only one site visit)"""
