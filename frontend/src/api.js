@@ -115,20 +115,27 @@ export const loanAPI = {
 // =========================
 // PAYMENTS (FIXED - CUSTOMER ID BASED)
 // =========================
+// =========================
+// PAYMENTS (FIXED - CUSTOMER BASED SYSTEM)
+// =========================
 export const paymentAPI = {
-  // GET payment by CUSTOMER ID (since each customer has only one payment)
+  // GET payment by CUSTOMER ID
   get: (customerId) =>
     get(`/payments/by-customer/${customerId}`, {
       validateStatus: (status) => status < 500,
     }),
 
-  // CREATE payment (uses customer_id inside payload)
+  // CREATE payment (customer_id inside payload)
   create: (payload, config) =>
     post("/payments/", payload, config),
 
   // UPDATE payment by CUSTOMER ID
   update: (customerId, payload, config) =>
     put(`/payments/${customerId}`, payload, config),
+
+  // OPTIONAL: DELETE payment by CUSTOMER ID
+  remove: (customerId) =>
+    remove(`/payments/${customerId}`),
 };
 
 // =========================

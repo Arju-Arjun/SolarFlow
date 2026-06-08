@@ -5,7 +5,6 @@ from models import Customer, Payment, Loan, SiteVisit
 from werkzeug.utils import secure_filename
 import os
 import uuid
-import json
 
 payment_bp = Blueprint(
     "payment_bp",
@@ -42,7 +41,7 @@ def delete_file(filepath):
             os.remove(full_path)
 
 
-# ================= GET PAYMENT BY CUSTOMER ID =================
+# ================= GET BY CUSTOMER =================
 @payment_bp.route("/by-customer/<int:customer_id>", methods=["GET"])
 @jwt_required()
 def get_payment_by_customer(customer_id):
@@ -68,16 +67,17 @@ def get_payment_by_customer(customer_id):
         return jsonify({"error": str(e)}), 500
 
 
-# ================= CREATE PAYMENT =================
-@payment_bp.route("/<int:customer_id>", methods=["POST"])
+# ================= CREATE =================
+@payment_bp.route("/", methods=["POST"])
 @jwt_required()
-def create_payment(customer_id):
+def create_payment():
     try:
         data = request.form
+        customer_id = int(data.get("customer_id"))
 
         existing = Payment.query.filter_by(customer_id=customer_id).first()
         if existing:
-            return jsonify({"error": "Payment already exists. Use PUT"}), 400
+            return jsonify({"error": "Payment already exists"}), 400
 
         customer = Customer.query.get(customer_id)
         if not customer:
@@ -109,17 +109,16 @@ def create_payment(customer_id):
         db.session.add(payment)
         db.session.commit()
 
-        # FILES
         files = request.files.getlist("files")
-        file_paths = []
+        images = []
 
         for file in files:
             if file and file.filename:
                 path = save_payment_file(file, customer.name)
                 if path:
-                    file_paths.append(path)
+                    images.append(path)
 
-        payment.payment_proofs = file_paths
+        payment.payment_proofs = images
         db.session.commit()
 
         return jsonify({
@@ -133,7 +132,7 @@ def create_payment(customer_id):
                 "total_received": payment.total_received,
                 "balance_due": payment.balance_due,
                 "comments": payment.comments,
-                "images": file_paths
+                "images": images
             }
         }), 201
 
@@ -142,7 +141,7 @@ def create_payment(customer_id):
         return jsonify({"error": str(e)}), 500
 
 
-# ================= UPDATE PAYMENT (FIXED - IMPORTANT) =================
+# ================= UPDATE (FIXED) =================
 @payment_bp.route("/<int:customer_id>", methods=["PUT"])
 @jwt_required()
 def update_payment(customer_id):
@@ -154,17 +153,10 @@ def update_payment(customer_id):
 
         data = request.form
 
-        if data.get("advance") is not None:
-            payment.advance = float(data.get("advance"))
-
-        if data.get("second") is not None:
-            payment.second = float(data.get("second"))
-
-        if data.get("third") is not None:
-            payment.third = float(data.get("third"))
-
-        if data.get("comments") is not None:
-            payment.comments = data.get("comments")
+        payment.advance = float(data.get("advance", payment.advance or 0))
+        payment.second = float(data.get("second", payment.second or 0))
+        payment.third = float(data.get("third", payment.third or 0))
+        payment.comments = data.get("comments", payment.comments)
 
         loan = Loan.query.filter_by(customer_id=customer_id).first()
         loan_amount = float(loan.total_loan_amount or 0) if loan else 0
@@ -181,17 +173,16 @@ def update_payment(customer_id):
 
         payment.balance_due = project_cost - payment.total_received
 
-        # FILES
         files = request.files.getlist("files")
-        existing = payment.payment_proofs or []
+        images = payment.payment_proofs or []
 
         for file in files:
             if file and file.filename:
                 path = save_payment_file(file, Customer.query.get(customer_id).name)
                 if path:
-                    existing.append(path)
+                    images.append(path)
 
-        payment.payment_proofs = existing
+        payment.payment_proofs = images
 
         db.session.commit()
 
@@ -206,7 +197,7 @@ def update_payment(customer_id):
                 "total_received": payment.total_received,
                 "balance_due": payment.balance_due,
                 "comments": payment.comments,
-                "images": payment.payment_proofs
+                "images": images
             }
         }), 200
 
@@ -215,7 +206,7 @@ def update_payment(customer_id):
         return jsonify({"error": str(e)}), 500
 
 
-# ================= GET PAYMENT =================
+# ================= GET =================
 @payment_bp.route("/<int:customer_id>", methods=["GET"])
 @jwt_required()
 def get_payment(customer_id):
@@ -241,7 +232,7 @@ def get_payment(customer_id):
         return jsonify({"error": str(e)}), 500
 
 
-# ================= DELETE PAYMENT =================
+# ================= DELETE =================
 @payment_bp.route("/<int:customer_id>", methods=["DELETE"])
 @jwt_required()
 def delete_payment(customer_id):
