@@ -48,15 +48,15 @@ def create_app():
 
     # ================= BLUEPRINTS =================
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
-    app.register_blueprint(customer_bp, url_prefix="/api/customers")
-    app.register_blueprint(site_visit_bp, url_prefix="/api/site-visits")
-    app.register_blueprint(mnre_bp, url_prefix="/api/mnre")
-    app.register_blueprint(payment_bp, url_prefix="/api/payments")
-    app.register_blueprint(loan_bp, url_prefix="/api/loans")
-    app.register_blueprint(kseb_bp, url_prefix="/api/kseb")
-    app.register_blueprint(service_bp, url_prefix="/api/services")
-    app.register_blueprint(material_delivery_bp, url_prefix="/api/material-deliveries")
-    app.register_blueprint(installation_bp, url_prefix="/api/installations")
+    app.register_blueprint(customer_bp)
+    app.register_blueprint(site_visit_bp)
+    app.register_blueprint(mnre_bp)
+    app.register_blueprint(payment_bp)
+    app.register_blueprint(loan_bp)
+    app.register_blueprint(kseb_bp)
+    app.register_blueprint(service_bp)
+    app.register_blueprint(material_delivery_bp)
+    app.register_blueprint(installation_bp)
     # ================= AUTO CREATE TABLES (OPTION 2) =================
     with app.app_context():
         db.create_all()
