@@ -19,6 +19,7 @@ import useConfirm from "../../hooks/useConfirm";
 
 const getGoogleMapsUrl = (location) => {
   if (!location) return "#";
+  // Directly targets the exact GPS point on the map interface
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}`;
 };
 
@@ -496,43 +497,51 @@ const CustomerProfile = () => {
   };
 
   const handleLocationAutoFill = async () => {
-    if (!navigator.geolocation) return;
-    if (locationLoading) return;
+  if (!navigator.geolocation) return;
+  if (locationLoading) return;
 
-    setLocationLoading(true);
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        try {
-          const { latitude, longitude } = position.coords;
-          const response = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`
-          );
-          const data = await response.json();
-          const addressDetails = data?.address || {};
-          const placeName = data?.display_name || [
-            addressDetails?.house_number, addressDetails?.road, addressDetails?.suburb,
-            addressDetails?.city || addressDetails?.town || addressDetails?.village,
-            addressDetails?.state, addressDetails?.country,
-          ].filter(Boolean).join(", ");
+  setLocationLoading(true);
+  navigator.geolocation.getCurrentPosition(
+    async (position) => {
+      try {
+        const { latitude, longitude } = position.coords;
+        
+        // 💡 Exact coordinates string format: "latitude, longitude"
+        const exactCoordinates = `${latitude}, ${longitude}`;
 
-          setSiteVisit((prev) => ({
-            ...(prev || {}),
-            location: placeName || `${latitude}, ${longitude}`,
-          }));
-          setLocationDetected(true);
-        } catch (error) {
-          console.error("Location fetch failed:", error);
-        } finally {
-          setLocationLoading(false);
-        }
-      },
-      (error) => {
-        console.error("Geolocation error:", error);
+        // Keep fetching the human-readable address for the UI display
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`
+        );
+        const data = await response.json();
+        const addressDetails = data?.address || {};
+        const placeName = data?.display_name || [
+          addressDetails?.house_number, addressDetails?.road, addressDetails?.suburb,
+          addressDetails?.city || addressDetails?.town || addressDetails?.village,
+          addressDetails?.state, addressDetails?.country,
+        ].filter(Boolean).join(", ");
+
+        setSiteVisit((prev) => ({
+          ...(prev || {}),
+          // 💡 Save the exact coordinates to the database so the link never misses
+          location: exactCoordinates, 
+          // Optional: If you have a separate text field for address, you can use placeName
+          display_address: placeName 
+        }));
+        setLocationDetected(true);
+      } catch (error) {
+        console.error("Location fetch failed:", error);
+      } finally {
         setLocationLoading(false);
-      },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
-    );
-  };
+      }
+    },
+    (error) => {
+      console.error("Geolocation error:", error);
+      setLocationLoading(false);
+    },
+    { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+  );
+};
 
   const handleSiteSave = async () => {
     if (!(await confirm(siteVisit?.id ? "Save site visit updates?" : "Create this site visit record?"))) return;
@@ -1091,7 +1100,10 @@ const CustomerProfile = () => {
                 <h4>Site Visit Details</h4>
                 <div className="detail-grid">
                   <div className="detail-item"><label>Customer Name:</label><span>{customer.name}</span></div>
-                  <div className="detail-item"><label>Location:</label><span>{siteVisit.location ? <a href={getGoogleMapsUrl(siteVisit.location)} target="_blank" rel="noopener noreferrer">{siteVisit.location}</a> : "N/A"}</span></div>
+                  <div className="detail-item" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <label style={{ margin: 0 }}>Location:</label>
+                    <span>{siteVisit.location ? <a href={getGoogleMapsUrl(siteVisit.location)} target="_blank" rel="noopener noreferrer">📍 View Exact Site Map Location</a> : "N/A"}</span>
+                  </div>
                   <div className="detail-item"><label>Panel Capacity:</label><span>{siteVisit.panel_capacity} KW</span></div>
                   <div className="detail-item"><label>System Capacity:</label><span>{siteVisit.system_capacity} KW</span></div>
                   <div className="detail-item"><label>Feasibility:</label><span>{siteVisit.feasibility || "N/A"}</span></div>
