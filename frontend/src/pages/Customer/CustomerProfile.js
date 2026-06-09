@@ -26,6 +26,7 @@ const renderMediaUrl = (path) => {
   if (!path) return "https://cdn.corenexis.com/files/c/5589175720.jpg";
 
   if (path.startsWith("http://") || path.startsWith("https://")) {
+    // raw/upload മാറ്റി image/upload ആക്കുന്നു
     if (path.includes("raw/upload") && path.endsWith(".pdf")) {
       return path.replace("raw/upload", "image/upload");
     }
@@ -1121,7 +1122,7 @@ const CustomerProfile = () => {
                   <div className="doc-view">
   {siteVisit.quotation_file && (
     <a 
-      href={`https://docs.google.com/gview?url=${encodeURIComponent(renderMediaUrl(siteVisit.quotation_file))}&embedded=true`} 
+      href={renderMediaUrl(siteVisit.quotation_file)} 
       target="_blank" 
       rel="noopener noreferrer" 
       className="doc-link"
@@ -1132,7 +1133,7 @@ const CustomerProfile = () => {
   
   {siteVisit.agreement_file && (
     <a 
-      href={`https://docs.google.com/gview?url=${encodeURIComponent(renderMediaUrl(siteVisit.agreement_file))}&embedded=true`} 
+      href={renderMediaUrl(siteVisit.agreement_file)} 
       target="_blank" 
       rel="noopener noreferrer" 
       className="doc-link"
