@@ -20,11 +20,13 @@ import useConfirm from "../../hooks/useConfirm";
 const getGoogleMapsUrl = (location) => {
   if (!location) return "#";
   
-  // If it contains our delimiter, extract only the GPS coordinates portion
+  // If the location string contains our delimiter, extract only the GPS coordinates portion
   const targetLocation = location.includes(" | ") ? location.split(" | ")[0] : location;
   
-  return `http://googleusercontent.com/maps.google.com/?q=${encodeURIComponent(targetLocation)}`;
+  // Generates an authentic query string using the correct Google Maps domain
+  return `https://www.google.com/maps?q=${encodeURIComponent(targetLocation)}`;
 };
+
 const renderMediaUrl = (path) => {
   if (!path) return "https://cdn.corenexis.com/files/c/5589175720.jpg";
   if (path.startsWith("http://") || path.startsWith("https://")) {
