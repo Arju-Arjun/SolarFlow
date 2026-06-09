@@ -1,10 +1,11 @@
-import json
-from datetime import datetime
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required
 from extensions import db
 from models import Service, Customer
-from utils import upload_to_cloud
+# Imported delete utility alongside your upload tool
+from utils import upload_to_cloud, delete_from_cloudinary
+from datetime import datetime
+import json
 
 service_bp = Blueprint("service_bp", __name__, url_prefix="/api/services")
 
@@ -60,9 +61,17 @@ def update_service(id):
         if comments:
             service.comments = comments
 
+        # Parse the remaining assets retained by the user interface
         existing_images = json.loads(request.form.get("existingImages", "[]"))
-        files = request.files.getlist("images")
+        
+        # 1. Compare database and incoming list to find removed structural assets
+        old_images = json.loads(service.images) if service.images else []
+        for old_url in old_images:
+            if old_url not in existing_images:
+                delete_from_cloudinary(old_url)
 
+        # 2. Append new file assets uploaded during this request cycle
+        files = request.files.getlist("images")
         for file in files:
             if file and file.filename:
                 cloud_url = upload_to_cloud(file, folder_name="solar_flow/services")
@@ -82,6 +91,14 @@ def update_service(id):
 def delete_service(id):
     try:
         service = Service.query.get_or_404(id)
+        
+        # 1. Parse and purge all nested structural cloud images before deleting database entry
+        if service.images:
+            image_urls = json.loads(service.images)
+            for url in image_urls:
+                delete_from_cloudinary(url)
+
+        # 2. Complete data table row purge
         db.session.delete(service)
         db.session.commit()
         return jsonify({"message": "Service deleted successfully"}), 200

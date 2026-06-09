@@ -2,7 +2,9 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required
 from extensions import db
 from models import Customer, Payment, Loan, SiteVisit
-from utils import upload_to_cloud
+# Imported delete utility along with your upload tool
+from utils import upload_to_cloud, delete_from_cloudinary
+import json
 
 payment_bp = Blueprint("payment_bp", __name__, url_prefix="/api/payments")
 
@@ -102,15 +104,28 @@ def update_payment(customer_id):
         payment.total_received = float(payment.advance or 0) + float(payment.second or 0) + float(payment.third or 0) + loan_amount
         payment.balance_due = project_cost - payment.total_received
 
+        # Parse preserved URLs passed down from front-end state synchronization
+        existing_images_param = data.get("existingImages")
+        if existing_images_param:
+            retained_images = json.loads(existing_images_param)
+        else:
+            retained_images = payment.payment_proofs or []
+
+        # 1. Compare dataset and clear out dropped records from cloud hosting
+        old_images = payment.payment_proofs or []
+        for old_url in old_images:
+            if old_url not in retained_images:
+                delete_from_cloudinary(old_url)
+
+        # 2. Append newly submitted files to tracking array
         files = request.files.getlist("files")
-        images = payment.payment_proofs or []
         for file in files:
             if file and file.filename:
                 cloud_url = upload_to_cloud(file, folder_name="solar_flow/payments")
                 if cloud_url:
-                    images.append(cloud_url)
+                    retained_images.append(cloud_url)
 
-        payment.payment_proofs = images
+        payment.payment_proofs = retained_images
         db.session.commit()
 
         return jsonify({
@@ -118,7 +133,7 @@ def update_payment(customer_id):
             "payment": {
                 "id": payment.id, "customer_id": payment.customer_id, "advance": payment.advance,
                 "second": payment.second, "third": payment.third, "total_received": payment.total_received,
-                "balance_due": payment.balance_due, "comments": payment.comments, "images": images
+                "balance_due": payment.balance_due, "comments": payment.comments, "images": retained_images
             }
         }), 200
     except Exception as e:
@@ -149,8 +164,14 @@ def delete_payment(customer_id):
         if not payment:
             return jsonify({"error": "Payment not found"}), 404
 
+        # 1. Purge all nested storage files before table row removal
+        if payment.payment_proofs:
+            for url in payment.payment_proofs:
+                delete_from_cloudinary(url)
+
         db.session.delete(payment)
         db.session.commit()
         return jsonify({"message": "Deleted successfully"}), 200
     except Exception as e:
+        db.session.rollback()
         return jsonify({"error": str(e)}), 500

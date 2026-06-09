@@ -2,8 +2,8 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required
 from extensions import db
 from models import Loan, Customer
-
-from utils import upload_to_cloud
+# Imported delete utility alongside your upload tool
+from utils import upload_to_cloud, delete_from_cloudinary
 
 loan_bp = Blueprint("loan_bp", __name__, url_prefix="/api/loans")
 
@@ -27,13 +27,22 @@ def create_or_update_loan(customer_id):
 
     if not enabled:
         if loan:
+            # Purge the document file from storage if the module row is dropped via the toggle switch
+            if loan.ack_file:
+                delete_from_cloudinary(loan.ack_file)
+                
             db.session.delete(loan)
             db.session.commit()
-        return jsonify({"message": "Bank loan removed successfully"}), 200
+        return jsonify({"message": "Bank loan deleted successfully"}), 200
 
     file = request.files.get("ack_file")
     file_path = None
+    
     if file and file.filename:
+        # If updating an existing record, purge its old file asset first before replacing it
+        if loan and loan.ack_file:
+            delete_from_cloudinary(loan.ack_file)
+            
         file_path = upload_to_cloud(file, folder_name="solar_flow/loans")
 
     if not loan:

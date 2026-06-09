@@ -6,7 +6,9 @@ from models import (
     MaterialDelivery, Installation, KsebRegistration, Dcr,
     MnreInstallation, Service
 )
-from utils import upload_to_cloud
+# Imported delete utility alongside your upload tool
+from utils import upload_to_cloud, delete_from_cloudinary
+import json
 
 DEFAULT_IMAGE = "/backend/static/uploads/profile_photo/default.png"
 
@@ -221,6 +223,10 @@ def update_customer(customer_id):
     if is_form:
         file = request.files.get("profile_photo")
         if file and file.filename:
+            # Purge previous hosted profile picture if it's not the default image fallback string
+            if customer.profile_photo and customer.profile_photo != DEFAULT_IMAGE:
+                delete_from_cloudinary(customer.profile_photo)
+                
             cloud_url = upload_to_cloud(file, folder_name="solar_flow/profile_photos")
             if cloud_url:
                 customer.profile_photo = cloud_url
@@ -247,6 +253,10 @@ def delete_customer(customer_id):
         return jsonify({"message": "Customer not found"}), 404
 
     try:
+        # Purge their custom avatar file from cloud storage prior to deleting database row entry
+        if customer.profile_photo and customer.profile_photo != DEFAULT_IMAGE:
+            delete_from_cloudinary(customer.profile_photo)
+            
         db.session.delete(customer)
         db.session.commit()
         return jsonify({"message": "Customer deleted successfully"}), 200

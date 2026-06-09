@@ -2,7 +2,8 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from extensions import db
 from models import SiteVisit, Customer
-from utils import upload_to_cloud
+# Imported both your upload and delete utilities here:
+from utils import upload_to_cloud, delete_from_cloudinary
 import json
 
 # =========================
@@ -131,7 +132,6 @@ def create_or_get_site_visit():
             ownership_change=request.form.get("ownership_change")
         )
 
-        # Upload specific documents straight to Cloudinary fields
         def upload_field_file(field_name, target_folder):
             target_file = request.files.get(field_name)
             if target_file and target_file.filename:
@@ -148,7 +148,6 @@ def create_or_get_site_visit():
         site.building_tax = upload_field_file("building_tax", "property_records")
         site.signature = upload_field_file("signature", "signatures")
 
-        # Handling multiple generic site layout visual images
         images = request.files.getlist("images")
         image_list = []
 
@@ -193,10 +192,18 @@ def update_site_visit(id):
         d.ownership_change = request.form.get("ownership_change", d.ownership_change)
         d.location = request.form.get("location", d.location)
 
-        # Dynamic upload wrapper bypassing local side effects
+        # File processing framework checking for database field replacements
         def update_field_file(field_name, target_folder):
             file = request.files.get(field_name)
             if file and file.filename:
+                # 1. Look up any existing active secure Cloudinary link
+                old_file_url = getattr(d, field_name, None)
+                
+                # 2. Safely trigger data removal execution inside Cloudinary
+                if old_file_url:
+                    delete_from_cloudinary(old_file_url)
+                
+                # 3. Handle incoming replacement asset payload routing
                 cloud_url = upload_to_cloud(file, folder_name=f"solar_flow/site_visits/{target_folder}")
                 if cloud_url:
                     setattr(d, field_name, cloud_url)

@@ -4,7 +4,8 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required
 from extensions import db
 from models import Mnre, Customer, MnreInstallation
-from utils import upload_to_cloud
+# Imported delete utility alongside your upload tool
+from utils import upload_to_cloud, delete_from_cloudinary
 
 mnre_bp = Blueprint("mnre_bp", __name__, url_prefix="/api/mnre")
 
@@ -21,6 +22,12 @@ def save_mnre_entry(customer_id):
 
     if not enabled:
         if mnre_entry:
+            # Clean up files from storage if row is dropped via toggle switch
+            if mnre_entry.feasibility_file:
+                delete_from_cloudinary(mnre_entry.feasibility_file)
+            if mnre_entry.ack_file:
+                delete_from_cloudinary(mnre_entry.ack_file)
+                
             db.session.delete(mnre_entry)
             db.session.commit()
         return jsonify({"message": "MNRE deleted"}), 200
@@ -36,6 +43,11 @@ def save_mnre_entry(customer_id):
     if "feasibility_file" in request.files:
         file = request.files["feasibility_file"]
         if file and file.filename:
+            # 1. Purge the existing file asset from Cloudinary storage if present
+            if mnre_entry.feasibility_file:
+                delete_from_cloudinary(mnre_entry.feasibility_file)
+            
+            # 2. Upload incoming replacement document safely
             cloud_url = upload_to_cloud(file, folder_name="solar_flow/mnre/feasibility")
             if cloud_url:
                 mnre_entry.feasibility_file = cloud_url
@@ -43,6 +55,11 @@ def save_mnre_entry(customer_id):
     if "ack_file" in request.files:
         file = request.files["ack_file"]
         if file and file.filename:
+            # 1. Purge the existing acknowledgment file asset from storage
+            if mnre_entry.ack_file:
+                delete_from_cloudinary(mnre_entry.ack_file)
+                
+            # 2. Upload incoming replacement acknowledgment file safely
             cloud_url = upload_to_cloud(file, folder_name="solar_flow/mnre/acknowledgments")
             if cloud_url:
                 mnre_entry.ack_file = cloud_url
@@ -65,6 +82,12 @@ def delete_mnre_entry(customer_id):
     mnre_entry = Mnre.query.filter_by(customer_id=customer_id).first()
     if not mnre_entry:
         return jsonify({"error": "MNRE entry not found"}), 404
+
+    # Purge all assigned documentation files from cloud storage on row destruction
+    if mnre_entry.feasibility_file:
+        delete_from_cloudinary(mnre_entry.feasibility_file)
+    if mnre_entry.ack_file:
+        delete_from_cloudinary(mnre_entry.ack_file)
 
     db.session.delete(mnre_entry)
     db.session.commit()

@@ -4,7 +4,8 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required
 from extensions import db
 from models import Installation, Customer
-from utils import upload_to_cloud
+# Imported delete utility alongside your upload tool
+from utils import upload_to_cloud, delete_from_cloudinary
 
 installation_bp = Blueprint("installation_bp", __name__, url_prefix="/api/installations")
 
@@ -27,6 +28,15 @@ def create_or_update_installation(customer_id):
         new_files = request.files.getlist("geo_images")
         image_paths = existing_images.copy() if existing_images else []
         
+        # 1. Compare dataset and clear dropped assets from cloud storage if updating
+        if installation and installation.geo_images:
+            # Assuming installation.geo_images is already parsed or a list field type
+            old_images = installation.geo_images if isinstance(installation.geo_images, list) else json.loads(installation.geo_images)
+            for old_url in old_images:
+                if old_url not in image_paths:
+                    delete_from_cloudinary(old_url)
+        
+        # 2. Append newly uploaded images to tracking index array
         for file in new_files:
             if file and file.filename:
                 cloud_url = upload_to_cloud(file, folder_name="solar_flow/installations")
@@ -76,8 +86,16 @@ def delete_installation(customer_id):
         if not installation:
             return jsonify({"error": "Installation record not found"}), 404
 
+        # 1. Purge all geo_images associated with this dataset from Cloudinary hosting
+        if installation.geo_images:
+            image_urls = installation.geo_images if isinstance(installation.geo_images, list) else json.loads(installation.geo_images)
+            for url in image_urls:
+                delete_from_cloudinary(url)
+
+        # 2. Clear row entry from database completely
         db.session.delete(installation)
         db.session.commit()
         return jsonify({"message": "Installation record deleted successfully"}), 200
     except Exception as e:
+        db.session.rollback()
         return jsonify({"error": str(e)}), 500
