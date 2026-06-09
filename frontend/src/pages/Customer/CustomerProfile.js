@@ -19,10 +19,12 @@ import useConfirm from "../../hooks/useConfirm";
 
 const getGoogleMapsUrl = (location) => {
   if (!location) return "#";
-  // Directly targets the exact GPS point on the map interface
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}`;
+  
+  // If it contains our delimiter, extract only the GPS coordinates portion
+  const targetLocation = location.includes(" | ") ? location.split(" | ")[0] : location;
+  
+  return `http://googleusercontent.com/maps.google.com/?q=${encodeURIComponent(targetLocation)}`;
 };
-
 const renderMediaUrl = (path) => {
   if (!path) return "https://cdn.corenexis.com/files/c/5589175720.jpg";
   if (path.startsWith("http://") || path.startsWith("https://")) {
@@ -506,27 +508,29 @@ const CustomerProfile = () => {
       try {
         const { latitude, longitude } = position.coords;
         
-        // 💡 Exact coordinates string format: "latitude, longitude"
-        const exactCoordinates = `${latitude}, ${longitude}`;
+        // 1. Get the exact GPS coordinates string
+        const gpsCoordinates = `${latitude},${longitude}`;
 
-        // Keep fetching the human-readable address for the UI display
+        // 2. Fetch the human-readable address name from the API
         const response = await fetch(
           `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`
         );
         const data = await response.json();
         const addressDetails = data?.address || {};
-        const placeName = data?.display_name || [
-          addressDetails?.house_number, addressDetails?.road, addressDetails?.suburb,
-          addressDetails?.city || addressDetails?.town || addressDetails?.village,
-          addressDetails?.state, addressDetails?.country,
-        ].filter(Boolean).join(", ");
+        
+        // Create a clean short location name (e.g., "Street, City")
+        const locationName = [
+          addressDetails?.road,
+          addressDetails?.suburb,
+          addressDetails?.city || addressDetails?.town || addressDetails?.village
+        ].filter(Boolean).join(", ") || "Detected Location";
+
+        // 3. Combine both into one string: "Coordinates | Location Name"
+        const combinedLocationData = `${gpsCoordinates} | ${locationName}`;
 
         setSiteVisit((prev) => ({
           ...(prev || {}),
-          // 💡 Save the exact coordinates to the database so the link never misses
-          location: exactCoordinates, 
-          // Optional: If you have a separate text field for address, you can use placeName
-          display_address: placeName 
+          location: combinedLocationData, // This goes to the database
         }));
         setLocationDetected(true);
       } catch (error) {
@@ -1100,9 +1104,17 @@ const CustomerProfile = () => {
                 <h4>Site Visit Details</h4>
                 <div className="detail-grid">
                   <div className="detail-item"><label>Customer Name:</label><span>{customer.name}</span></div>
-                  <div className="detail-item" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                 <div className="detail-item" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                     <label style={{ margin: 0 }}>Location:</label>
-                    <span>{siteVisit.location ? <a href={getGoogleMapsUrl(siteVisit.location)} target="_blank" rel="noopener noreferrer">📍 View Exact Site Map Location</a> : "N/A"}</span>
+                    <span>
+                      {siteVisit?.location ? (
+                        <a href={getGoogleMapsUrl(siteVisit.location)} target="_blank" rel="noopener noreferrer">
+                          📍 {siteVisit.location.includes(" | ") ? siteVisit.location.split(" | ")[1] : "View Map Location"}
+                        </a>
+                      ) : (
+                        "N/A"
+                      )}
+                    </span>
                   </div>
                   <div className="detail-item"><label>Panel Capacity:</label><span>{siteVisit.panel_capacity} KW</span></div>
                   <div className="detail-item"><label>System Capacity:</label><span>{siteVisit.system_capacity} KW</span></div>
