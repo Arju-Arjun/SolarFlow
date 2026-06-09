@@ -24,15 +24,9 @@ const getGoogleMapsUrl = (location) => {
 
 const renderMediaUrl = (path) => {
   if (!path) return "https://cdn.corenexis.com/files/c/5589175720.jpg";
-
   if (path.startsWith("http://") || path.startsWith("https://")) {
-    // raw/upload മാറ്റി image/upload ആക്കുന്നു
-    if (path.includes("raw/upload") && path.endsWith(".pdf")) {
-      return path.replace("raw/upload", "image/upload");
-    }
     return path;
   }
-
   return `${process.env.REACT_APP_BASE_URL}${path}`;
 };
 
@@ -1120,28 +1114,9 @@ const CustomerProfile = () => {
                 <div className="form-section">
                   <h5>Files</h5>
                   <div className="doc-view">
-  {siteVisit.quotation_file && (
-    <a 
-      href={renderMediaUrl(siteVisit.quotation_file)} 
-      target="_blank" 
-      rel="noopener noreferrer" 
-      className="doc-link"
-    >
-      📄 Quotation
-    </a>
-  )}
-  
-  {siteVisit.agreement_file && (
-    <a 
-      href={renderMediaUrl(siteVisit.agreement_file)} 
-      target="_blank" 
-      rel="noopener noreferrer" 
-      className="doc-link"
-    >
-      📄 Agreement
-    </a>
-  )}
-</div>
+                    {siteVisit.quotation_file && <a href={renderMediaUrl(siteVisit.quotation_file)} target="_blank" rel="noopener noreferrer" className="doc-link">📄 Quotation</a>}
+                    {siteVisit.agreement_file && <a href={renderMediaUrl(siteVisit.agreement_file)} target="_blank" rel="noopener noreferrer" className="doc-link">📄 Agreement</a>}
+                  </div>
                 </div>
                 <div className="form-section">
                   <h5>Documents</h5>
