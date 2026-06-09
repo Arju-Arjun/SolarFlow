@@ -873,9 +873,9 @@ button:hover {
     padding: 1.5rem;
   }
 
-  .grid-two {
+  /* .grid-two {
     grid-template-columns: 1fr;
-  }
+  } */
 
   .profile-header {
     flex-direction: column;
@@ -4582,6 +4582,12 @@ button:hover {
   margin: 0 auto 3rem;
 }
 
+/* 💡 Target the 3rd item specifically to drop down and center align */
+.grid-two > *:nth-child(3) {
+  grid-column: span 2; /* Forces it to span across both columns, taking up the full second line */
+  justify-self: center; /* Centers the item horizontally within that line */
+  width: 50%; /* Optional: Adjust width so it matches the size of the elements above it */
+}
 .card-link {
   display: block;
   padding: 3rem 2rem;
@@ -4928,9 +4934,9 @@ button:hover {
     padding: 1.5rem;
   }
 
-  .grid-two {
+  /* .grid-two {
     grid-template-columns: 1fr;
-  }
+  } */
 
   .profile-header {
     flex-direction: column;
@@ -8830,4 +8836,192 @@ button:disabled:hover {
   object-fit: cover; 
   width: 100%;
   height: auto;
+}
+
+/* ==========================================================================
+   SUPPLEMENT DOCUMENTS STYLESHEET
+   ========================================================================== */
+
+.supplement-wrapper {
+  max-width: 1200px;
+  margin: 3rem auto;
+  padding: 0 1.5rem;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+}
+
+/* Header Section Styling */
+.supplement-header-row {
+  margin-bottom: 3rem;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 1.5rem;
+}
+
+.supplement-header-row h2 {
+  font-size: 2rem;
+  color: #1a202c;
+  margin: 1rem 0 0.5rem 0;
+  font-weight: 700;
+}
+
+.supplement-header-row p {
+  color: #4a5568;
+  font-size: 1rem;
+  margin: 0;
+}
+
+/* Back Navigation Button */
+.back-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: none;
+  border: 1px solid #cbd5e0;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  color: #4a5568;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.back-nav-btn:hover {
+  background-color: #f7fafc;
+  color: #1a202c;
+  border-color: #a0aec0;
+}
+
+/* 💡 Core 3-Column Grid Layout (using 1fr) */
+.supplement-grid-layout {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+}
+
+/* Document Asset Card Styling */
+.document-asset-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.document-asset-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+/* PDF Red Indicator Icon */
+.pdf-icon-indicator {
+  background: #fff5f5;
+  padding: 1.25rem;
+  border-radius: 50%;
+  margin-bottom: 1.25rem;
+  color: #e53e3e;
+  font-size: 2.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Card Content Blocks */
+.card-info-block {
+  flex-grow: 1; /* Pushes the actions container to the bottom so buttons line up perfectly */
+  margin-bottom: 1.5rem;
+}
+
+.card-info-block h3 {
+  font-size: 1.25rem;
+  color: #2d3748;
+  margin: 0 0 0.75rem 0;
+  font-weight: 600;
+}
+
+.card-info-block p {
+  font-size: 0.95rem;
+  color: #718096;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Action Button Wrapper Layout */
+.card-actions-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+/* Base Action Button Shared Classes */
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.75rem;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 0.95rem;
+  transition: background-color 0.15s ease;
+  box-sizing: border-box;
+}
+
+/* Preview Button Component styling */
+.preview-btn {
+  background-color: #edf2f7;
+  color: #2d3748;
+  border: 1px solid #e2e8f0;
+}
+
+.preview-btn:hover {
+  background-color: #e2e8f0;
+}
+
+/* Download Button Component styling */
+.download-btn {
+  background-color: #3182ce;
+  color: #ffffff;
+  border: 1px solid transparent;
+}
+
+.download-btn:hover {
+  background-color: #2b6cb0;
+}
+
+/* ==========================================================================
+   RESPONSIVE DESIGN BREAKPOINTS
+   ========================================================================== */
+
+/* Medium Devices (Tablets) */
+@media (max-width: 968px) {
+  .supplement-grid-layout {
+    grid-template-columns: repeat(2, 1fr); /* Wraps down to a clean 2-column format */
+  }
+}
+
+/* Small Devices (Mobile Viewports) */
+@media (max-width: 640px) {
+  .supplement-wrapper {
+    margin: 1.5rem auto;
+  }
+  
+  .supplement-grid-layout {
+    grid-template-columns: 1fr; /* Stacks vertically into a single column format */
+    gap: 1.5rem;
+  }
+  
+  .supplement-header-row h2 {
+    font-size: 1.5rem;
+  }
+  
+  .document-asset-card {
+    padding: 1.5rem;
+  }
 }

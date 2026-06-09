@@ -10,6 +10,8 @@ import Dashboard from "./pages/Dashboard";
 import CustomerForm from "./pages/CustomerForm";
 import Customers from "./pages/Customers";
 import CustomerProfile from "./pages/Customer/CustomerProfile";
+// 💡 Import the new SupplementDocuments page component
+import SupplementDocuments from "./SupplementDocuments"; 
 
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -26,6 +28,7 @@ function App() {
 
         <Route path="/" element={<AuthRedirect />} />
 
+        {/* Public Routes */}
         <Route
           path="/login"
           element={
@@ -59,11 +62,15 @@ function App() {
           }
         />
 
+        {/* Authenticated / Protected Private Routes */}
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/customers/add" element={<CustomerForm />} />
           <Route path="/customers" element={<Customers />} />
           <Route path="/customer/:id" element={<CustomerProfile />} />
+          
+          {/* 💡 Registered the /Supplement path cleanly inside the protected wrapper */}
+          <Route path="/Supplement" element={<SupplementDocuments />} />
         </Route>
 
       </Routes>

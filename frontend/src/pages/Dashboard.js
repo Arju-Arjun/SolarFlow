@@ -39,7 +39,15 @@ function Dashboard() {
           <p>Review customer list and manage details.</p>
         </Link>
 
-      </div>
+        <Link className="card-link" to="/Supplement">
+          <h3>Supplement Documents</h3>
+          <p>View and download supplement documents.</p>
+        </Link>
+        
+        </div>
+  
+
+      
 
       <div className="dashboard-logout">
         <button onClick={logout}>
