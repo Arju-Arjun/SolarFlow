@@ -8825,3 +8825,9 @@ button:disabled:hover {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
+
+.preview-image, .gallery-image {
+  object-fit: cover; 
+  width: 100%;
+  height: auto;
+}

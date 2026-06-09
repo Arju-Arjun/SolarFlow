@@ -30,6 +30,17 @@ const renderMediaUrl = (path) => {
   return `${process.env.REACT_APP_BASE_URL}${path}`;
 };
 
+const getPdfPreviewUrl = (path) => {
+  if (!path) return "#";
+  const fullUrl = path.startsWith("http") ? path : `${process.env.REACT_APP_BASE_URL}${path}`;
+  
+
+  if (fullUrl.toLowerCase().endsWith('.pdf') || fullUrl.includes('/raw/upload/')) {
+    return `https://docs.google.com/gview?url=${encodeURIComponent(fullUrl)}&embedded=true`;
+  }
+  return fullUrl;
+};
+
 const CustomerProfile = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -86,9 +97,8 @@ const CustomerProfile = () => {
   // Site Visit State
   const [siteVisit, setSiteVisit] = useState(null);
   const [siteEdit, setSiteEdit] = useState(false);
-  const [siteImages, setSiteImages] = useState([]);
+  const [siteImages, setSiteImages] = useState([]); // പുതിയ ഇമേജ് അപ്പൻഡ് ചെയ്യാൻ ലിസ്റ്റ്
   const [existingImages, setExistingImages] = useState([]);
-  const [deletedImages, setDeletedImages] = useState([]);
   const [locationDetected, setLocationDetected] = useState(false);
   const [locationLoading, setLocationLoading] = useState(false);
 
@@ -109,7 +119,6 @@ const CustomerProfile = () => {
   const [paymentDraft, setPaymentDraft] = useState(null);
   const [paymentImages, setPaymentImages] = useState([]);
   const [existingPaymentImages, setExistingPaymentImages] = useState([]);
-  const [deletedPaymentImages, setDeletedPaymentImages] = useState([]);
 
   // Bank Loan State
   const [loanProfile, setLoanProfile] = useState(null);
@@ -126,14 +135,12 @@ const CustomerProfile = () => {
   const [ksebRegistrationEdit, setKsebRegistrationEdit] = useState(false);
   const [ksebRegistrationDraft, setKsebRegistrationDraft] = useState(null);
   const [ksebRegistrationLoading, setKsebRegistrationLoading] = useState(false);
-  const [ksebRegistrationError, setKsebRegistrationError] = useState("");
 
   // DCR State
   const [dcr, setDcr] = useState(null);
   const [dcrEdit, setDcrEdit] = useState(false);
   const [dcrDraft, setDcrDraft] = useState(null);
   const [dcrLoading, setDcrLoading] = useState(false);
-  const [dcrError, setDcrError] = useState("");
 
   // Material Delivery State
   const [materialDelivery, setMaterialDelivery] = useState(null);
@@ -167,11 +174,10 @@ const CustomerProfile = () => {
   const [installationEdit, setInstallationEdit] = useState(false);
   const [installationDraft, setInstallationDraft] = useState({
     electrical_installed: false, electrical_comments: "",
-    structure_installed: false, structure_comments: "", geo_images: null
+    structure_installed: false, structure_comments: "", geo_images: []
   });
   const [installationLoading, setInstallationLoading] = useState(false);
   const [existingGeoImages, setExistingGeoImages] = useState([]);
-  const [deletedGeoImages, setDeletedGeoImages] = useState([]);
 
   const stateDistrictMap = {
     Kerala: [
@@ -273,14 +279,11 @@ const CustomerProfile = () => {
   useEffect(() => {
     const fetchKsebRegistration = async () => {
       try {
-        setKsebRegistrationLoading(true);
         const res = await ksebRegistrationAPI.get(id);
         setKsebRegistration(res.data);
         setKsebRegistrationDraft(res.data);
       } catch (err) {
         setKsebRegistration(null);
-      } finally {
-        setKsebRegistrationLoading(false);
       }
     };
     fetchKsebRegistration();
@@ -289,14 +292,11 @@ const CustomerProfile = () => {
   useEffect(() => {
     const fetchDcr = async () => {
       try {
-        setDcrLoading(true);
         const res = await dcrAPI.get(id);
         setDcr(res.data);
         setDcrDraft(res.data);
       } catch (err) {
         setDcr(null);
-      } finally {
-        setDcrLoading(false);
       }
     };
     fetchDcr();
@@ -360,7 +360,7 @@ const CustomerProfile = () => {
           setInstallation(null);
           setInstallationDraft({
             electrical_installed: false, electrical_comments: "",
-            structure_installed: false, structure_comments: "", geo_images: null,
+            structure_installed: false, structure_comments: "", geo_images: [],
           });
           setExistingGeoImages([]);
           return;
@@ -373,14 +373,14 @@ const CustomerProfile = () => {
           electrical_comments: data.electrical_comments || "",
           structure_installed: data.structure_installed || false,
           structure_comments: data.structure_comments || "",
-          geo_images: null,
+          geo_images: [],
         });
         setExistingGeoImages(data.geo_images || []);
       } catch (err) {
         setInstallation(null);
         setInstallationDraft({
           electrical_installed: false, electrical_comments: "",
-          structure_installed: false, structure_comments: "", geo_images: null,
+          structure_installed: false, structure_comments: "", geo_images: [],
         });
         setExistingGeoImages([]);
       } finally {
@@ -481,12 +481,14 @@ const CustomerProfile = () => {
     }
   };
 
-  const handleSiteImageChange = (e) => setSiteImages(Array.from(e.target.files));
+  // 💡 FIX: പഴയ ഫയലുകൾ ഓവർറൈറ്റ് ചെയ്യാതെ മൾട്ടിപ്പിൾ ഫയലുകൾ അപ്പൻഡ് ചെയ്യുന്നു
+  const handleSiteImageChange = (e) => {
+    const files = Array.from(e.target.files);
+    setSiteImages((prev) => [...prev, ...files]);
+  };
 
   const handleRemoveExistingImage = (index) => {
-    const img = existingImages[index];
     setExistingImages((prev) => prev.filter((_, i) => i !== index));
-    setDeletedImages((prev) => [...prev, img]);
   };
 
   const handleRemoveNewImage = (index) => {
@@ -554,17 +556,17 @@ const CustomerProfile = () => {
       });
 
       siteImages.forEach((file) => { if (file) formData.append("images", file); });
-      if (deletedImages.length > 0) formData.append("deleted_images", JSON.stringify(deletedImages));
-      if (existingImages.length > 0) formData.append("existing_images", JSON.stringify(existingImages));
+      
+      // 💡 FIX: കണ്ടീഷൻ കളഞ്ഞ് എപ്പോഴും 'existing_images' സ്ട്രിങ് ആയി പാസ്സ് ചെയ്യുന്നു. ലിസ്റ്റ് കാലിയായാലും കറക്റ്റ് ആയി അപ്ഡേറ്റ് ആകും.
+      formData.append("existing_images", JSON.stringify(existingImages));
 
       await siteVisitAPI.save(siteVisit?.id, formData);
       setSiteEdit(false);
       setSiteImages([]);
-      setDeletedImages([]);
       fetchSiteVisitData();
     } catch (err) {
       console.error(err);
-    }  finally { setSiteSaveLoading(false); }
+    } finally { setSiteSaveLoading(false); }
   };
 
   // ==========================================
@@ -620,16 +622,13 @@ const CustomerProfile = () => {
   const handlePaymentImageChange = (e) => {
     const files = Array.from(e.target.files).filter((f) => f.type.startsWith("image/"));
     setPaymentImages((prev) => [...prev, ...files]);
-    e.target.value = null;
   };
 
   const handleRemovePaymentImage = (index, type) => {
     if (type === "new") {
       setPaymentImages((prev) => prev.filter((_, i) => i !== index));
     } else {
-      const img = existingPaymentImages[index];
       setExistingPaymentImages((prev) => prev.filter((_, i) => i !== index));
-      setDeletedPaymentImages((prev) => [...prev, img]);
     }
   };
 
@@ -646,8 +645,9 @@ const CustomerProfile = () => {
       if (paymentDraft?.comments) formData.append("comments", paymentDraft.comments);
 
       paymentImages.forEach((file) => { if (file) formData.append("files", file); });
-      if (deletedPaymentImages.length > 0) formData.append("deleted_images", JSON.stringify(deletedPaymentImages));
-      if (existingPaymentImages.length > 0) formData.append("existing_images", JSON.stringify(existingPaymentImages));
+      
+      // 💡 FIX: എപ്പോഴും ലിസ്റ്റ് കറക്റ്റ് ആയി സ്ട്രിങ് ആക്കി ബാക്ക്എൻഡിലേക്ക് പാസ്സ് ചെയ്യുന്നു.
+      formData.append("existing_images", JSON.stringify(existingPaymentImages));
 
       const response = await paymentAPI.save(id, formData, Boolean(payment?.id));
       const data = response.data;
@@ -655,7 +655,6 @@ const CustomerProfile = () => {
       setPaymentEdit(false);
       setPaymentDraft(null);
       setPaymentImages([]);
-      setDeletedPaymentImages([]);
       setExistingPaymentImages(data.payment.images || []);
     } catch (err) {
       console.error(err);
@@ -667,7 +666,6 @@ const CustomerProfile = () => {
     setPaymentEdit(false);
     setPaymentImages([]);
     setExistingPaymentImages(payment?.images || []);
-    setDeletedPaymentImages([]);
   };
 
   const getPaymentTotal = (p) =>
@@ -749,15 +747,6 @@ const CustomerProfile = () => {
 
   const handleMaterialDeliveryCancel = () => {
     setMaterialDeliveryEdit(false);
-    setMaterialDeliveryDraft({
-      changes: materialDelivery?.changes || "",
-      extra_material: materialDelivery?.extra_material || "",
-      structure_changes: materialDelivery?.structure_changes || "",
-      electrical_delivered: materialDelivery?.electrical_delivered || false,
-      structure_delivered: materialDelivery?.structure_delivered || false,
-      panel_delivered: materialDelivery?.panel_delivered || false,
-      comments: materialDelivery?.comments || ""
-    });
   };
 
   const handleMaterialDeliverySave = async () => {
@@ -786,7 +775,6 @@ const CustomerProfile = () => {
   const handleKsebRegistrationSave = async () => {
     if (!(await confirm(ksebRegistration?.id ? "Save KSEB registration updates?" : "Create KSEB registration?"))) return;
     try {
-      setKsebRegistrationLoading(true);
       const data = {
         registration_submitted: ksebRegistrationDraft?.registration_submitted || false,
         completion_submitted: ksebRegistrationDraft?.completion_submitted || false,
@@ -802,13 +790,12 @@ const CustomerProfile = () => {
       setKsebRegistration(responseData.data || data);
       setKsebRegistrationDraft(responseData.data || data);
       setKsebRegistrationEdit(false);
-    } catch (err) { console.error(err); } finally { setKsebRegistrationLoading(false); }
+    } catch (err) { console.error(err); }
   };
 
   const handleDcrSave = async () => {
     if (!(await confirm(dcr?.id ? "Save DCR changes?" : "Create DCR information?"))) return;
     try {
-      setDcrLoading(true);
       const data = {
         certificate_received: dcrDraft?.certificate_received || false,
         certificate_claimed: dcrDraft?.certificate_claimed || false,
@@ -820,7 +807,7 @@ const CustomerProfile = () => {
       setDcr(responseData.data || data);
       setDcrDraft(responseData.data || data);
       setDcrEdit(false);
-    } catch (err) { console.error(err); } finally { setDcrLoading(false); }
+    } catch (err) { console.error(err); }
   };
 
   // ==========================================
@@ -848,15 +835,16 @@ const CustomerProfile = () => {
   };
 
   const handleServiceImageChange = (e) => {
-    setServiceForm({ ...serviceForm, images: [...serviceForm.images, ...Array.from(e.target.files)] });
+    const files = Array.from(e.target.files);
+    setServiceForm((prev) => ({ ...prev, images: [...prev.images, ...files] }));
   };
 
   const removeServiceNewImage = (i) => {
-    setServiceForm({ ...serviceForm, images: serviceForm.images.filter((_, index) => index !== i) });
+    setServiceForm((prev) => ({ ...prev, images: prev.images.filter((_, index) => index !== i) }));
   };
 
   const removeServiceExistingImage = (i) => {
-    setServiceForm({ ...serviceForm, existingImages: serviceForm.existingImages.filter((_, index) => index !== i) });
+    setServiceForm((prev) => ({ ...prev, existingImages: prev.existingImages.filter((_, index) => index !== i) }));
   };
 
   const handleServiceSave = async () => {
@@ -894,10 +882,12 @@ const CustomerProfile = () => {
       formData.append("electrical_comments", installationDraft?.electrical_comments || "");
       formData.append("structure_installed", installationDraft?.structure_installed || false);
       formData.append("structure_comments", installationDraft?.structure_comments || "");
+      
+      // 💡 FIX: ബാക്ക്എൻഡിലേക്ക് ശരിയായ കീയിൽ ലിസ്റ്റ് കറക്റ്റ് ആയി പാസ്സ് ചെയ്യുന്നു.
       formData.append("existingImages", JSON.stringify(existingGeoImages));
 
-      if (installationDraft?.geo_images) {
-        Array.from(installationDraft.geo_images).forEach(file => {
+      if (installationDraft?.geo_images?.length > 0) {
+        installationDraft.geo_images.forEach(file => {
           formData.append("geo_images", file);
         });
       }
@@ -910,11 +900,10 @@ const CustomerProfile = () => {
         electrical_comments: data.electrical_comments || "",
         structure_installed: data.structure_installed || false,
         structure_comments: data.structure_comments || "",
-        geo_images: null,
+        geo_images: [],
       });
 
       setExistingGeoImages(data.geo_images || []);
-      setDeletedGeoImages([]);
       setInstallationEdit(false);
     } catch (err) {
       console.error(err);
@@ -1007,7 +996,7 @@ const CustomerProfile = () => {
                     <p>📧 {customer?.email || "No email"}</p>
                     <p>📍 {address || customer?.place}</p>
                     <p>⚡ {customer?.capacity} KW</p>
-                    <button className="edit-btn" onClick={() => setIsEdit(true)}>Edit Profile</button>&nbsp;
+                    <button className="edit-btn" onClick={() => setIsEdit(true)}>Edit Profile</button> 
                     <button className="cancel-btn" onClick={handleDelete}>Delete Profile</button>
                   </>
                 ) : (
@@ -1114,15 +1103,15 @@ const CustomerProfile = () => {
                 <div className="form-section">
                   <h5>Files</h5>
                   <div className="doc-view">
-                    {siteVisit.quotation_file && <a href={renderMediaUrl(siteVisit.quotation_file)} target="_blank" rel="noopener noreferrer" className="doc-link">📄 Quotation</a>}
-                    {siteVisit.agreement_file && <a href={renderMediaUrl(siteVisit.agreement_file)} target="_blank" rel="noopener noreferrer" className="doc-link">📄 Agreement</a>}
-                  </div>
+                   {siteVisit.quotation_file && <a href={getPdfPreviewUrl(siteVisit.quotation_file)} target="_blank" rel="noopener noreferrer" className="doc-link">📄 Quotation</a>}
+                   {siteVisit.agreement_file && <a href={getPdfPreviewUrl(siteVisit.agreement_file)} target="_blank" rel="noopener noreferrer" className="doc-link">📄 Agreement</a>}
+                   </div>
                 </div>
                 <div className="form-section">
                   <h5>Documents</h5>
                   <div className="doc-view">
                     {["aadhaar", "pan", "kseb_bill", "bank_passbook", "land_tax", "building_tax", "signature"].map((docKey) => 
-                      siteVisit[docKey] && <a key={docKey} href={renderMediaUrl(siteVisit[docKey])} target="_blank" rel="noopener noreferrer" className="doc-link">📄 {docKey.toUpperCase().replace("_", " ")}</a>
+                      siteVisit[docKey] && <a key={docKey} href={getPdfPreviewUrl(siteVisit[docKey])} target="_blank" rel="noopener noreferrer" className="doc-link">📄 {docKey.toUpperCase().replace("_", " ")}</a>
                     )}
                   </div>
                 </div>
@@ -1207,7 +1196,7 @@ const CustomerProfile = () => {
                 </div>
                 <div className="btn-group">
                   <button className="save-btn" onClick={handleSiteSave} disabled={siteSaveLoading}>{siteSaveLoading ? <><span className="spinner"></span> Saving...</> : siteVisit ? "Save" : "Create Site Visit"}</button>
-                  <button className="cancel-btn" onClick={() => { setSiteEdit(false); setSiteImages([]); setDeletedImages([]); setExistingImages(siteVisit?.images || []); fetchSiteVisitData(); }}>Cancel</button>
+                  <button className="cancel-btn" onClick={() => { setSiteEdit(false); setSiteImages([]); setExistingImages(siteVisit?.images || []); fetchSiteVisitData(); }}>Cancel</button>
                 </div>
               </div>
             )}
@@ -1235,9 +1224,9 @@ const CustomerProfile = () => {
                       <div className="mnre-file-section">
                         <h5>Files</h5>
                         <div className="doc-view">
-                          {mnreProfile?.feasibility_file && <a href={renderMediaUrl(mnreProfile.feasibility_file)} target="_blank" rel="noopener noreferrer" className="doc-link"> Feasibility File</a>}
-                          {mnreProfile?.ack_file && <a href={renderMediaUrl(mnreProfile.ack_file)} target="_blank" rel="noopener noreferrer" className="doc-link"> Acknowledgment File</a>}
-                        </div>
+                          {mnreProfile?.feasibility_file && <a href={getPdfPreviewUrl(mnreProfile.feasibility_file)} target="_blank" rel="noopener noreferrer" className="doc-link"> Feasibility File</a>}
+{mnreProfile?.ack_file && <a href={getPdfPreviewUrl(mnreProfile.ack_file)} target="_blank" rel="noopener noreferrer" className="doc-link"> Acknowledgment File</a>}
+                          </div>
                       </div>
                       <div className="mnre-btn-group"><button className="mnre-save-btn" onClick={() => { setMnreDraft({ ...mnreProfile }); setMnreEdit(true); }}>Update MNRE Profile</button></div>
                     </>
@@ -1368,7 +1357,7 @@ const CustomerProfile = () => {
                     <div className="mnre-comments"><label>Comments:</label><p>{loanProfile?.comments || "No comments"}</p></div>
                     <div className="loan-file-section">
                       <div className="doc-view">
-                        {loanProfile?.ack_file && <a href={renderMediaUrl(loanProfile.ack_file)} target="_blank" rel="noopener noreferrer" className="doc-link">📄 Acknowledgment File</a>}
+                      {loanProfile?.ack_file && <a href={getPdfPreviewUrl(loanProfile.ack_file)} target="_blank" rel="noopener noreferrer" className="doc-link">📄 Acknowledgment File</a>} 
                       </div>
                     </div>
                     <div className="mnre-btn-group">
@@ -1404,178 +1393,901 @@ const CustomerProfile = () => {
           </div>
         )}
 
-        {/* ================= KSEB TAB ================= */}
+     {/* ================= KSEB TAB ================= */}
         {activeTab === "kseb" && (
           <div className="module-form">
-            <h2>KSEB DETAILS</h2>
-            {!ksebEdit ? (
-              <>
-                {ksebProfile ? (
-                  <div className="kseb-grid">
-                    <div className="kseb-item"><label>Name Change</label><span>{ksebProfile.name_change_status || "Not Required"}</span></div>
-                    <div className="kseb-item"><label>Load Enhance</label><span>{ksebProfile.load_enhance_status || "Not Required"}</span></div>
-                    <div className="kseb-item"><label>Feasibility Request</label><span>{ksebProfile.feasibility ? "Yes" : "No"}</span></div>
-                    <div className="kseb-item"><label>Fee Paid</label><span>{ksebProfile.fee_paid ? "Yes" : "No"}</span></div>
-                  </div>
-                ) : <p>No profile created.</p>}
-                <button className="kseb-edit-btn" onClick={handleKsebEdit}>Update KSEB Details</button>
-              </>
-            ) : (
-              <div className="kseb-edit">
-                <label><input type="checkbox" checked={ksebDraft?.name_change || false} onChange={(e) => setKsebDraft({ ...ksebDraft, name_change: e.target.checked })} /> Name Change Required</label>
-                <label><input type="checkbox" checked={ksebDraft?.load_enhance || false} onChange={(e) => setKsebDraft({ ...ksebDraft, load_enhance: e.target.checked })} /> Load Enhance Required</label>
-                <label><input type="checkbox" checked={ksebDraft?.feasibility || false} onChange={(e) => setKsebDraft({ ...ksebDraft, feasibility: e.target.checked })} /> Feasibility Submitted</label>
-                <label><input type="checkbox" checked={ksebDraft?.fee_paid || false} onChange={(e) => setKsebDraft({ ...ksebDraft, fee_paid: e.target.checked })} /> Fee Paid</label>
-                <div className="kseb-btn-group">
-                  <button className="kseb-save-btn" onClick={handleKsebSave} disabled={ksebSaveLoading}>Save</button>
-                  <button className="kseb-cancel-btn" onClick={() => setKsebEdit(false)}>Cancel</button>
+            <div className="kseb-container">
+              {!ksebEdit ? (
+                <div>
+                  <h2> KSEB DETAILS</h2>
+                  {!ksebProfile ? (
+                    <div className="kseb-create-message">
+                      <p>No KSEB data found for this customer</p>
+                      <button className="kseb-edit-btn" onClick={() => { setKsebDraft({ name_change: false, name_change_status: "Pending", name_change_comment: "", load_enhance: false, load_enhance_status: "Pending", load_enhance_comment: "", feasibility: false, fee_paid: false }); setKsebEdit(true); }}>Create KSEB Profile</button>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="kseb-grid">
+                        <div className="kseb-item"><label>Name Change</label><span className={`status-badge ${ksebProfile?.name_change_status?.toLowerCase().replace(/\s/g, "-") || "not-required"}`}>{ksebProfile?.name_change_status || "Not Required"}</span></div>
+                        <div className="kseb-item"><label>Load Enhance</label><span className={`status-badge ${ksebProfile?.load_enhance_status?.toLowerCase().replace(/\s/g, "-") || "not-required"}`}>{ksebProfile?.load_enhance_status || "Not Required"}</span></div>
+                        <div className="kseb-item"><label>Feasibility Submitted</label><span className={`status-badge ${ksebProfile?.feasibility ? "yes" : "no"}`}>{ksebProfile?.feasibility ? "Yes" : "No"}</span></div>
+                        <div className="kseb-item"><label>Fee Paid</label><span className={`status-badge ${ksebProfile?.fee_paid ? "yes" : "no"}`}>{ksebProfile?.fee_paid ? "Yes" : "No"}</span></div>
+                      </div>
+                      <button className="kseb-edit-btn" onClick={handleKsebEdit}>Update KSEB Details</button>
+                    </>
+                  )}
                 </div>
-              </div>
-            )}
+              ) : (
+                <div className="kseb-edit">
+                  <h2> KSEB DETAILS</h2>
+                  
+                  <div className="kseb-box">
+                    <div className="kseb-header">
+                      <label>
+                        <input
+                          type="checkbox"
+                          checked={ksebDraft.name_change || false}
+                          onChange={(e) => {
+                            const checked = e.target.checked;
+                            setKsebDraft((prev) => ({
+                              ...prev,
+                              name_change: checked,
+                              name_change_status: checked ? prev.name_change_status : "",
+                              name_change_comment: checked ? prev.name_change_comment : "",
+                            }));
+                          }}
+                        />
+                        Name Change Required
+                      </label>
+                    </div>
+
+                    {ksebDraft.name_change && (
+                      <div className="kseb-fields">
+                        <select
+                          value={ksebDraft.name_change_status || ""}
+                          onChange={(e) =>
+                            setKsebDraft((prev) => ({
+                              ...prev,
+                              name_change_status: e.target.value,
+                            }))
+                          }
+                        >
+                          <option value="" disabled hidden>Select Status</option>
+                          <option value="Completed">Completed</option>
+                          <option value="Pending">Pending</option>
+                        </select>
+
+                        <input
+                          type="text"
+                          placeholder="Comments"
+                          value={ksebDraft.name_change_comment || ""}
+                          onChange={(e) =>
+                            setKsebDraft((prev) => ({
+                              ...prev,
+                              name_change_comment: e.target.value,
+                            }))
+                          }
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="kseb-box">
+                    <div className="kseb-header">
+                      <label>
+                        <input
+                          type="checkbox"
+                          checked={ksebDraft.load_enhance || false}
+                          onChange={(e) => {
+                            const checked = e.target.checked;
+                            setKsebDraft((prev) => ({
+                              ...prev,
+                              load_enhance: checked,
+                              load_enhance_status: checked ? prev.load_enhance_status : "",
+                              load_enhance_comment: checked ? prev.load_enhance_comment : "",
+                            }));
+                          }}
+                        />
+                        Load Enhance Required
+                      </label>
+                    </div>
+
+                    {ksebDraft.load_enhance && (
+                      <div className="kseb-fields">
+                        <select
+                          value={ksebDraft.load_enhance_status || ""}
+                          onChange={(e) =>
+                            setKsebDraft((prev) => ({
+                              ...prev,
+                              load_enhance_status: e.target.value,
+                            }))
+                          }
+                        >
+                          <option value="" disabled hidden>Select Status</option>
+                          <option value="Completed">Completed</option>
+                          <option value="Pending">Pending</option>
+                        </select>
+
+                        <input
+                          type="text"
+                          placeholder="Comments"
+                          value={ksebDraft.load_enhance_comment || ""}
+                          onChange={(e) =>
+                            setKsebDraft((prev) => ({
+                              ...prev,
+                              load_enhance_comment: e.target.value,
+                            }))
+                          }
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="kseb-box"><div className="kseb-header"><label><input type="checkbox" checked={ksebDraft.feasibility || false} onChange={(e) => setKsebDraft({ ...ksebDraft, feasibility: e.target.checked })} /> Feasibility Request Submitted</label></div></div>
+                  <div className="kseb-box"><div className="kseb-header"><label><input type="checkbox" checked={ksebDraft.fee_paid || false} onChange={(e) => setKsebDraft({ ...ksebDraft, fee_paid: e.target.checked })} /> Fee Paid</label></div></div>
+                  <div className="kseb-btn-group"><button className="kseb-save-btn" onClick={handleKsebSave} disabled={ksebSaveLoading}>{ksebSaveLoading ? <><span className="spinner"></span> Saving...</> : "Save"}</button><button className="kseb-cancel-btn" onClick={() => setKsebEdit(false)}>Cancel</button></div>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
         {/* ================= MATERIAL DELIVERY ================= */}
         {activeTab === "material_delivery" && (
           <div className="module-form">
-            <h2>MATERIAL DELIVERY</h2>
-            {!materialDeliveryEdit ? (
-              <>
-                {materialDelivery ? (
-                  <div className="material-delivery-status-grid">
-                    <div>Electrical: {materialDelivery.electrical_delivered ? "✓" : "✗"}</div>
-                    <div>Structure: {materialDelivery.structure_delivered ? "✓" : "✗"}</div>
-                    <div>Panel: {materialDelivery.panel_delivered ? "✓" : "✗"}</div>
+            <div className="material-delivery-container">
+              {!materialDeliveryEdit ? (
+                <div>
+                  <h2> MATERIAL DELIVERY</h2>
+
+                  {!materialDelivery ? (
+                    <div className="material-delivery-create-message">
+                      <p>No Material Delivery data found for this customer</p>
+                      <button
+                        className="kseb-edit-btn"
+                        onClick={() => {
+                          setMaterialDeliveryDraft({
+                            changes: "",
+                            extra_material: "",
+                            structure_changes: "",
+                            electrical_delivered: false,
+                            structure_delivered: false,
+                            panel_delivered: false,
+                            comments: ""
+                          });
+                          setMaterialDeliveryEdit(true);
+                        }}
+                      >
+                        Create Material Delivery
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="material-delivery-grid">
+                        <div className="material-delivery-card">
+                          <div className="card-header-row">
+                            <h4>Changes</h4>
+                          </div>
+                          <p className="card-text">{materialDelivery.changes || 'No changes recorded.'}</p>
+                        </div>
+
+                        <div className="material-delivery-card">
+                          <div className="card-header-row">
+                            <h4>Extra Material</h4>
+                          </div>
+                          <p className="card-text">{materialDelivery.extra_material || 'No extra material details.'}</p>
+                        </div>
+
+                        <div className="material-delivery-card">
+                          <div className="card-header-row">
+                            <h4>Structure Changes</h4>
+                          </div>
+                          <p className="card-text">{materialDelivery.structure_changes || 'No structure change details.'}</p>
+                        </div>
+
+                        <div className="material-delivery-card">
+                          <div className="card-header-row">
+                            <h4>Comments</h4>
+                          </div>
+                          <p className="card-text">{materialDelivery.comments || 'No comments added.'}</p>
+                        </div>
+                      </div>
+
+                      <div className="material-delivery-status-grid">
+                        <div className="material-delivery-status-card">
+                          <label>Electrical Materials Delivered</label>
+                          <span className={`status-badge ${materialDelivery.electrical_delivered ? 'yes' : 'no'}`}>
+                            {materialDelivery.electrical_delivered ? 'Yes' : 'No'}
+                          </span>
+                        </div>
+                        <div className="material-delivery-status-card">
+                          <label>Structure Material Delivered</label>
+                          <span className={`status-badge ${materialDelivery.structure_delivered ? 'yes' : 'no'}`}>
+                            {materialDelivery.structure_delivered ? 'Yes' : 'No'}
+                          </span>
+                        </div>
+                        <div className="material-delivery-status-card">
+                          <label>Panel Delivered</label>
+                          <span className={`status-badge ${materialDelivery.panel_delivered ? 'yes' : 'no'}`}>
+                            {materialDelivery.panel_delivered ? 'Yes' : 'No'}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="material-delivery-btn-group kseb-btn-group">
+                        <button className="kseb-edit-btn" onClick={handleMaterialDeliveryEdit}>Update Material Delivery</button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              ) : (
+                <div>
+                  <h2> MATERIAL DELIVERY</h2>
+                  <div className="material-delivery-form">
+                    <div className="material-delivery-form-grid">
+                      <div className="form-group">
+                        <label>Changes</label>
+                        <textarea
+                          value={materialDeliveryDraft.changes || ""}
+                          onChange={(e) => setMaterialDeliveryDraft({ ...materialDeliveryDraft, changes: e.target.value })}
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label>Extra Material</label>
+                        <textarea
+                          value={materialDeliveryDraft.extra_material || ""}
+                          onChange={(e) => setMaterialDeliveryDraft({ ...materialDeliveryDraft, extra_material: e.target.value })}
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label>Structure Changes</label>
+                        <textarea
+                          value={materialDeliveryDraft.structure_changes || ""}
+                          onChange={(e) => setMaterialDeliveryDraft({ ...materialDeliveryDraft, structure_changes: e.target.value })}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="material-delivery-checkbox-grid">
+                      <div className="material-delivery-checkbox-group">
+                        <label className="material-delivery-checkbox-label">
+                          <input
+                            type="checkbox"
+                            checked={materialDeliveryDraft.electrical_delivered || false}
+                            onChange={(e) => setMaterialDeliveryDraft({ ...materialDeliveryDraft, electrical_delivered: e.target.checked })}
+                          />
+                          Electrical Materials Delivered
+                        </label>
+                      </div>
+                      <div className="material-delivery-checkbox-group">
+                        <label className="material-delivery-checkbox-label">
+                          <input
+                            type="checkbox"
+                            checked={materialDeliveryDraft.structure_delivered || false}
+                            onChange={(e) => setMaterialDeliveryDraft({ ...materialDeliveryDraft, structure_delivered: e.target.checked })}
+                          />
+                          Structure Material Delivered
+                        </label>
+                      </div>
+                      <div className="material-delivery-checkbox-group">
+                        <label className="material-delivery-checkbox-label">
+                          <input
+                            type="checkbox"
+                            checked={materialDeliveryDraft.panel_delivered || false}
+                            onChange={(e) => setMaterialDeliveryDraft({ ...materialDeliveryDraft, panel_delivered: e.target.checked })}
+                          />
+                          Panel Delivered
+                        </label>
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label>Comments</label>
+                      <textarea
+                        value={materialDeliveryDraft.comments || ""}
+                        onChange={(e) => setMaterialDeliveryDraft({ ...materialDeliveryDraft, comments: e.target.value })}
+                      />
+                    </div>
+
+                    <div className="material-delivery-btn-group kseb-btn-group">
+                      <button className="kseb-save-btn" onClick={handleMaterialDeliverySave} disabled={materialDeliveryLoading}>{materialDeliveryLoading ? <><span className="spinner"></span> Saving...</> : "Save"}</button>
+                      <button className="kseb-cancel-btn" onClick={handleMaterialDeliveryCancel}>Cancel</button>
+                    </div>
                   </div>
-                ) : <p>No logs created.</p>}
-                <button className="kseb-edit-btn" onClick={handleMaterialDeliveryEdit}>Update Logs</button>
-              </>
-            ) : (
-              <div>
-                <label><input type="checkbox" checked={materialDeliveryDraft.electrical_delivered} onChange={(e) => setMaterialDeliveryDraft({...materialDeliveryDraft, electrical_delivered: e.target.checked})} /> Electrical Delivered</label>
-                <label><input type="checkbox" checked={materialDeliveryDraft.structure_delivered} onChange={(e) => setMaterialDeliveryDraft({...materialDeliveryDraft, structure_delivered: e.target.checked})} /> Structure Delivered</label>
-                <label><input type="checkbox" checked={materialDeliveryDraft.panel_delivered} onChange={(e) => setMaterialDeliveryDraft({...materialDeliveryDraft, panel_delivered: e.target.checked})} /> Panel Delivered</label>
-                <div className="material-delivery-btn-group"><button className="kseb-save-btn" onClick={handleMaterialDeliverySave}>Save</button><button className="kseb-cancel-btn" onClick={handleMaterialDeliveryCancel}>Cancel</button></div>
-              </div>
-            )}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
         {/* ================= INSTALLATION TAB ================= */}
         {activeTab === "installation" && (
           <div className="module-form">
-            <h2>INSTALLATION DETAILS</h2>
-            {!installationEdit ? (
-              <>
-                {installation ? (
-                  <div className="installation-cards">
-                    <div>Electrical: {installation.electrical_installed ? "✓" : "✗"}</div>
-                    <div>Structure: {installation.structure_installed ? "✓" : "✗"}</div>
-                    <div className="installation-images-grid">
-                      {installation.geo_images?.map((img, idx) => <img key={idx} src={renderMediaUrl(img)} alt="" />)}
+            <div className="installation-container">
+              {installationLoading ? <p>Loading...<span className="spinner"></span></p> : !installationEdit ? (
+                <div>
+                  <h2> INSTALLATION DETAILS</h2>
+
+                  {!installation ? (
+                    <div className="installation-create-message">
+                      <p>No Installation data found for this customer</p>
+                      <button
+                        className="installation-create-btn"
+                        onClick={() => {
+                          setInstallationDraft({
+                            electrical_installed: false,
+                            electrical_comments: "",
+                            structure_installed: false,
+                            structure_comments: "",
+                            geo_images: []
+                          });
+                          setExistingGeoImages([]);
+                          setInstallationEdit(true);
+                        }}
+                      >
+                        Create Installation
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="installation-cards">
+                        <div className="installation-card">
+                          <div className="card-header">
+                            <h4>Electrical Installation</h4>
+                            <span className={`status-badge ${installation.electrical_installed ? 'completed' : 'pending'}`}>
+                              {installation.electrical_installed ? '✓ Installed' : '✗ Not Installed'}
+                            </span>
+                          </div>
+                          {installation.electrical_comments && (
+                            <p className="card-text">{installation.electrical_comments}</p>
+                          )}
+                        </div>
+
+                        <div className="installation-card">
+                          <div className="card-header">
+                            <h4>Structure Installation</h4>
+                            <span className={`status-badge ${installation.structure_installed ? 'completed' : 'pending'}`}>
+                              {installation.structure_installed ? '✓ Installed' : '✗ Not Installed'}
+                            </span>
+                          </div>
+                          {installation.structure_comments && (
+                            <p className="card-text">{installation.structure_comments}</p>
+                          )}
+                        </div>
+                      </div>
+
+                      {installation.geo_images && installation.geo_images.length > 0 && (
+                        <div className="installation-images-section">
+                          <h4>Geo Tagged Images</h4>
+                          <div className="installation-images-grid">
+                            {installation.geo_images.map((img, idx) => (
+                              <div key={idx} className="installation-image-card">
+                                {/* 💡 FIX: Modified to run safely with unified cloud resource path resolver helper */}
+                                <a href={renderMediaUrl(img)} target="_blank" rel="noopener noreferrer">
+                                  <img src={renderMediaUrl(img)} alt={`Geo Image ${idx + 1}`} />
+                                </a>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="installation-btn-group kseb-btn-group">
+                        <button className="kseb-edit-btn" onClick={() => {
+                          setInstallationDraft({
+                            electrical_installed: installation.electrical_installed || false,
+                            electrical_comments: installation.electrical_comments || "",
+                            structure_installed: installation.structure_installed || false,
+                            structure_comments: installation.structure_comments || "",
+                            geo_images: []
+                          });
+                          setExistingGeoImages(installation.geo_images || []);
+                          setInstallationEdit(true);
+                        }}>Update Installation</button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              ) : (
+                <div>
+                  <h2> INSTALLATION DETAILS</h2>
+                  <div className="installation-form">
+                    <div className="installation-section">
+                      <div className="installation-checkbox-group">
+                        <label className="installation-checkbox-label">
+                          <input
+                            type="checkbox"
+                            checked={installationDraft.electrical_installed || false}
+                            onChange={(e) => {
+                              setInstallationDraft({
+                                ...installationDraft,
+                                electrical_installed: e.target.checked,
+                                electrical_comments: e.target.checked ? installationDraft.electrical_comments : ""
+                              });
+                            }}
+                          />
+                          Electrical Installation
+                        </label>
+                      </div>
+                      {installationDraft.electrical_installed && (
+                        <div className="form-group">
+                          <label>Comments</label>
+                          <textarea
+                            placeholder="Enter electrical installation comments..."
+                            value={installationDraft.electrical_comments || ""}
+                            onChange={(e) => setInstallationDraft({ ...installationDraft, electrical_comments: e.target.value })}
+                            rows="3"
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="installation-section">
+                      <div className="installation-checkbox-group">
+                        <label className="installation-checkbox-label">
+                          <input
+                            type="checkbox"
+                            checked={installationDraft.structure_installed || false}
+                            onChange={(e) => {
+                              setInstallationDraft({
+                                ...installationDraft,
+                                structure_installed: e.target.checked,
+                                structure_comments: e.target.checked ? installationDraft.structure_comments : ""
+                              });
+                            }}
+                          />
+                          Structure Installation
+                        </label>
+                      </div>
+                      {installationDraft.structure_installed && (
+                        <div className="form-group">
+                          <label>Comments</label>
+                          <textarea
+                            placeholder="Enter structure installation comments..."
+                            value={installationDraft.structure_comments || ""}
+                            onChange={(e) => setInstallationDraft({ ...installationDraft, structure_comments: e.target.value })}
+                            rows="3"
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="installation-images-section">
+                      <h4>Geo Tagged Images</h4>
+                      
+                      {existingGeoImages.length > 0 && (
+                        <div className="installation-existing-images">
+                          <h5>Uploaded Images</h5>
+                          <div className="installation-images-grid">
+                            {existingGeoImages.map((img, idx) => (
+                              <div key={`existing-${idx}`} className="installation-image-card">
+                                {/* 💡 FIX: Connected with cloud media view helper inside editing gallery map */}
+                                <img src={renderMediaUrl(img)} alt={`Existing Image ${idx + 1}`} />
+                                <button
+                                  type="button"
+                                  className="installation-remove-btn"
+                                  onClick={() => handleRemoveGeoImage(idx)}
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="form-group">
+                        <label>Upload Images</label>
+                        <input
+                          type="file"
+                          multiple
+                          accept="image/*"
+                          onChange={handleGeoImageChange}
+                        />
+                      </div>
+
+                      {installationDraft.geo_images && installationDraft.geo_images.length > 0 && (
+                        <div className="installation-new-images">
+                          <h5>New Images</h5>
+                          <div className="installation-images-grid">
+                            {Array.from(installationDraft.geo_images).map((file, idx) => (
+                              <div key={`new-${idx}`} className="installation-image-card">
+                                <img src={URL.createObjectURL(file)} alt={`New Image ${idx + 1}`} />
+                                <button type="button" className="installation-remove-btn" onClick={() => removeInstallationNewImage(idx)}>✕</button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="installation-btn-group kseb-btn-group">
+                      <button className="kseb-save-btn" onClick={handleInstallationSave} disabled={installationLoading}>{installationLoading ? <><span className="spinner"></span> Saving...</> : "Save"}</button>
+                      <button className="kseb-cancel-btn" onClick={() => {
+                        setInstallationEdit(false);
+                        setInstallationDraft({
+                          electrical_installed: installation?.electrical_installed || false,
+                          electrical_comments: installation?.electrical_comments || "",
+                          structure_installed: installation?.structure_installed || false,
+                          structure_comments: installation?.structure_comments || "",
+                          geo_images: []
+                        });
+                        setExistingGeoImages(installation?.geo_images || []);
+                      }}>Cancel</button>
                     </div>
                   </div>
-                ) : <p>No workflow metrics logged.</p>}
-                <button className="kseb-edit-btn" onClick={() => setInstallationEdit(true)}>Update Metrics</button>
-              </>
-            ) : (
-              <div>
-                <input type="file" multiple accept="image/*" onChange={handleGeoImageChange} />
-                <div className="installation-images-grid">
-                  {existingGeoImages.map((img, idx) => (
-                    <div key={idx}><img src={renderMediaUrl(img)} alt="" /><button type="button" onClick={() => handleRemoveGeoImage(idx)}>✕</button></div>
-                  ))}
                 </div>
-                <div className="installation-btn-group">
-                  <button className="kseb-save-btn" onClick={handleInstallationSave}>Save</button>
-                  <button className="kseb-cancel-btn" onClick={() => setInstallationEdit(false)}>Cancel</button>
-                </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         )}
 
-        {/* ================= KSEB REGISTRATION & COMMISSIONING ================= */}
+        {/* ================= KSEB REGISTRATION TAB ================= */}
         {activeTab === "kseb_registration" && (
           <div className="module-form">
-            <h2>KSEB REGISTRATION & COMMISSIONING</h2>
-            {!ksebRegistrationEdit ? (
-              <>
-                {ksebRegistration ? (
-                  <div className="kseb-registration-grid">
-                    <div>Energized: {ksebRegistration.plant_energized ? "✓ Yes" : "✗ No"}</div>
+            <div className="kseb-registration-container">
+              {ksebRegistrationLoading ? <p>Loading...</p> : !ksebRegistrationEdit ? (
+                <div>
+                  <h2> KSEB REGISTRATION & COMMISSIONING</h2>
+                  {!ksebRegistration ? (
+                    <div className="kseb-registration-create-message"><p>No data found</p><button className="kseb-registration-btn" onClick={() => { setKsebRegistrationDraft({ registration_submitted: false, completion_submitted: false, agreement_submitted: false, payment_done: false, plant_energized: false, wifi: false, wifi_configured: false, comments: "" }); setKsebRegistrationEdit(true); }}>Create</button></div>
+                  ) : (
+                    <>
+                      <div className="kseb-registration-grid">
+                        <div className="kseb-registration-item"><label>Registration Submitted</label><span className={ksebRegistration?.registration_submitted ? "status-yes" : "status-no"}>{ksebRegistration?.registration_submitted ? "✓ Yes" : "✗ No"}</span></div>
+                        <div className="kseb-registration-item"><label>Completion Submitted</label><span className={ksebRegistration?.completion_submitted ? "status-yes" : "status-no"}>{ksebRegistration?.completion_submitted ? "✓ Yes" : "✗ No"}</span></div>
+                        <div className="kseb-registration-item"><label>Agreement Submitted</label><span className={ksebRegistration?.agreement_submitted ? "status-yes" : "status-no"}>{ksebRegistration?.agreement_submitted ? "✓ Yes" : "✗ No"}</span></div>
+                        <div className="kseb-registration-item"><label>Payment Done</label><span className={ksebRegistration?.payment_done ? "status-yes" : "status-no"}>{ksebRegistration?.payment_done ? "✓ Yes" : "✗ No"}</span></div>
+                        <div className="kseb-registration-item"><label>Plant Energized</label><span className={ksebRegistration?.plant_energized ? "status-yes" : "status-no"}>{ksebRegistration?.plant_energized ? "✓ Yes" : "✗ No"}</span></div>
+                        <div className="kseb-registration-item"><label>WiFi</label><span className={ksebRegistration?.wifi ? "status-yes" : "status-no"}>{ksebRegistration?.wifi ? "✓ Yes" : "✗ No"}</span></div>
+                        {ksebRegistration?.wifi && <div className="kseb-registration-item"><label>WiFi Configured</label><span className={ksebRegistration?.wifi_configured ? "status-yes" : "status-no"}>{ksebRegistration?.wifi_configured ? "✓ Yes" : "✗ No"}</span></div>}
+                      </div>
+                      {ksebRegistration?.comments && <div className="kseb-registration-comments"><label>Comments:</label><p>{ksebRegistration.comments}</p></div>}
+                      <button className="kseb-registration-btn" onClick={() => { setKsebRegistrationDraft(ksebRegistration); setKsebRegistrationEdit(true); }}>Update Registration</button>
+                    </>
+                  )}
+                </div>
+              ) : (
+                <div>
+                  <h2>KSEB Registration</h2>
+                  <div className="kseb-registration-form">
+                    {['registration_submitted', 'completion_submitted', 'agreement_submitted', 'payment_done', 'plant_energized', 'wifi'].map(key => (
+                      <div className="kseb-registration-toggle-group" key={key}><label className="kseb-registration-toggle-label"><input type="checkbox" checked={ksebRegistrationDraft?.[key] || false} onChange={(e) => setKsebRegistrationDraft({ ...ksebRegistrationDraft, [key]: e.target.checked, wifi_configured: key === 'wifi' && !e.target.checked ? false : ksebRegistrationDraft?.wifi_configured })} /> <span>{key.replace(/_/g, ' ').toUpperCase()}</span></label></div>
+                    ))}
+                    {ksebRegistrationDraft?.wifi && <div className="kseb-registration-toggle-group kseb-registration-conditional"><label className="kseb-registration-toggle-label"><input type="checkbox" checked={ksebRegistrationDraft?.wifi_configured || false} onChange={(e) => setKsebRegistrationDraft({ ...ksebRegistrationDraft, wifi_configured: e.target.checked })} /> <span>WiFi Configured</span></label></div>}
+                    <div className="kseb-registration-textarea-group"><label>Comments</label><textarea value={ksebRegistrationDraft?.comments || ""} onChange={(e) => setKsebRegistrationDraft({ ...ksebRegistrationDraft, comments: e.target.value })} rows="4" /></div>
+                    {error && <p className="kseb-registration-error">{error}</p>}
                   </div>
-                ) : <p>No milestones reached.</p>}
-                <button className="kseb-registration-btn" onClick={() => setKsebRegistrationEdit(true)}>Update</button>
-              </>
-            ) : (
-              <div>
-                <label><input type="checkbox" checked={ksebRegistrationDraft?.plant_energized || false} onChange={(e) => setKsebRegistrationDraft({ ...ksebRegistrationDraft, plant_energized: e.target.checked })} /> PLANT ENERGIZED</label>
-                <button className="kseb-save-btn" onClick={handleKsebRegistrationSave}>Save</button>
-              </div>
-            )}
+                  <div className="kseb-btn-group"><button className="kseb-save-btn" onClick={handleKsebRegistrationSave} disabled={ksebRegistrationLoading}>{ksebRegistrationLoading ? <><span className="spinner"></span> Saving...</> : ksebRegistration?.id ? "Save" : "Create"}</button><button className="kseb-cancel-btn" onClick={() => { setKsebRegistrationEdit(false); setKsebRegistrationDraft(ksebRegistration); }}>Cancel</button></div>  </div>
+              )}
+            </div>
           </div>
         )}
 
         {/* ================= DCR TAB ================= */}
         {activeTab === "dcr" && (
           <div className="module-form">
-            <h2>DCR</h2>
-            {!dcrEdit ? (
-              <>
-                {dcr ? <div>Sold: {dcr.certificate_sold ? "✓" : "✗"}</div> : <p>No tracks saved.</p>}
-                <button className="dcr-btn" onClick={() => setDcrEdit(true)}>Update DCR</button>
-              </>
-            ) : (
-              <div>
-                <label><input type="checkbox" checked={dcrDraft?.certificate_sold || false} onChange={(e) => setDcrDraft({ ...dcrDraft, certificate_sold: e.target.checked })} /> CERTIFICATE SOLD</label>
-                <button className="kseb-save-btn" onClick={handleDcrSave}>Save</button>
-              </div>
-            )}
+            <div className="dcr-container">
+              {dcrLoading ? <p>Loading...</p> : !dcrEdit ? (
+                <div>
+                  <h2>DCR</h2>
+                  {!dcr ? (
+                    <div className="dcr-create-message"><p>No data</p><button className="dcr-btn" onClick={() => { setDcrDraft({ certificate_received: false, certificate_claimed: false, certificate_sold: false, comments: "" }); setDcrEdit(true); }}>Create DCR</button></div>
+                  ) : (
+                    <>
+                      <div className="dcr-grid">
+                        <div className="dcr-item"><label>Certificate Received</label><span className={dcr?.certificate_received ? "status-yes" : "status-no"}>{dcr?.certificate_received ? "✓ Yes" : "✗ No"}</span></div>
+                        <div className="dcr-item"><label>Certificate Claimed</label><span className={dcr?.certificate_claimed ? "status-yes" : "status-no"}>{dcr?.certificate_claimed ? "✓ Yes" : "✗ No"}</span></div>
+                        <div className="dcr-item"><label>Certificate Sold</label><span className={dcr?.certificate_sold ? "status-yes" : "status-no"}>{dcr?.certificate_sold ? "✓ Yes" : "✗ No"}</span></div>
+                      </div>
+                      {dcr?.comments && <div className="dcr-comments"><label>Comments:</label><p>{dcr.comments}</p></div>}
+                      <button className="dcr-btn" onClick={() => { setDcrDraft(dcr); setDcrEdit(true); }}>Update DCR</button>
+                    </>
+                  )}
+                </div>
+              ) : (
+                <div>
+                  <h2>Edit DCR</h2>
+                  <div className="dcr-form">
+                    {['certificate_received', 'certificate_claimed', 'certificate_sold'].map(key => (
+                      <div className="dcr-toggle-group" key={key}><label className="dcr-toggle-label"><input type="checkbox" checked={dcrDraft?.[key] || false} onChange={(e) => setDcrDraft({ ...dcrDraft, [key]: e.target.checked })} /> <span>{key.replace(/_/g, ' ').toUpperCase()}</span></label></div>
+                    ))}
+                    <div className="dcr-textarea-group"><label>Comments</label><textarea value={dcrDraft?.comments || ""} onChange={(e) => setDcrDraft({ ...dcrDraft, comments: e.target.value })} rows="4" /></div>
+                  </div>
+                  <div className="kseb-btn-group">
+                    <button className="kseb-save-btn" onClick={handleDcrSave} disabled={dcrLoading}>{dcrLoading ? <><span className="spinner"></span> Saving...</> : dcr?.id ? "Save" : "Create"}</button><button className="kseb-cancel-btn" onClick={() => { setDcrEdit(false); setDcrDraft(dcr); }}>Cancel</button></div>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
         {/* ================= MNRE INSTALLATION DETAILS TAB ================= */}
         {activeTab === "mnre_installation" && (
           <div className="module-form mnre-installation">
-            <h2>MNRE Installation Details</h2>
+            <div className="form-header">
+              <h2>MNRE Installation Details</h2>
+            </div>
+
+            {error && <div className="error-message">{error}</div>}
+
             {!mnreInstallationEdit ? (
+              // VIEW MODE
               <div className="mnre-sections">
-                <div className="mnre-card"><h3>Installation Status</h3><span className="status-badge">{mnreInstallation?.installation_status || "Not set"}</span></div>
-                <button className="mnre-save-btn" onClick={() => setMnreInstallationEdit(true)}>Update Details</button>
+                {/* Installation Status Section */}
+                <div className="mnre-card">
+                  <h3>Installation Status</h3>
+                  <div className="status-display">
+                    <p>
+                      <strong>Status:</strong>{" "}
+                      <span
+                        className={`status-badge ${
+                          mnreInstallation?.installation_status
+                            ?.toLowerCase()
+                            .replace(/\s/g, "-") || "not-set"
+                        }`}
+                      >
+                        {mnreInstallation?.installation_status || "Not set"}
+                      </span>
+                    </p>
+                    <p><strong>Comments:</strong> {mnreInstallation?.installation_comments || "No comments"}</p>
+                  </div>
+                </div>
+
+                {/* Approval Status Section */}
+                <div className="mnre-card">
+                  <h3>Approval Status</h3>
+                  <div className="status-display">
+                    <p>
+                      <strong>Status:</strong>{" "}
+                      <span
+                        className={`status-badge ${
+                          mnreInstallation?.approval_status
+                            ?.toLowerCase()
+                            .replace(/\s/g, "-") || "not-set"
+                        }`}
+                      >
+                        {mnreInstallation?.approval_status || "Not set"}
+                      </span>
+                    </p>
+                    <p><strong>Comments:</strong> {mnreInstallation?.approval_comments || "No comments"}</p>
+                  </div>
+                </div>
+
+                {/* Subsidy Status Section */}
+                <div className="mnre-card">
+                  <h3>Subsidy Status</h3>
+                  <div className="status-display">
+                    <p>
+                      <strong>Status:</strong>{" "}
+                      <span
+                        className={`status-badge ${
+                          mnreInstallation?.subsidy_status
+                            ?.toLowerCase()
+                            .replace(/\s/g, "-") || "not-set"
+                        }`}
+                      >
+                        {mnreInstallation?.subsidy_status || "Not set"}
+                      </span>
+                    </p>
+                    <p><strong>Comments:</strong> {mnreInstallation?.subsidy_comments || "No comments"}</p>
+                  </div>
+                </div>
               </div>
             ) : (
-              <div>
-                <select value={mnreInstallationDraft?.installation_status || ""} onChange={(e) => setMnreInstallationDraft({ ...mnreInstallationDraft, installation_status: e.target.value })}>
-                  <option value="Pending">Pending</option>
-                  <option value="Completed">Completed</option>
-                </select>
-                <button className="mnre-save-btn" onClick={handleMnreInstallationSave}>Save</button>
+              // EDIT MODE
+              <div className="mnre-form">
+                {/* Installation Status Section */}
+                <div className="mnre-section">
+                  <h3>Installation Status</h3>
+                  <div className="form-group">
+                    <label>Status</label>
+                    <select
+                      value={mnreInstallationDraft?.installation_status || ""}
+                      onChange={(e) =>
+                        setMnreInstallationDraft({
+                          ...mnreInstallationDraft,
+                          installation_status: e.target.value
+                        })
+                      }
+                      className="form-control"
+                    >
+                      <option value="Pending">Pending</option>
+                      <option value="Completed">Completed</option>
+                      <option value="Partially Done">Partially Done</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label>Comments</label>
+                    <textarea
+                      value={mnreInstallationDraft?.installation_comments || ""}
+                      onChange={(e) =>
+                        setMnreInstallationDraft({
+                          ...mnreInstallationDraft,
+                          installation_comments: e.target.value
+                        })
+                      }
+                      className="form-control"
+                      placeholder="Enter installation comments..."
+                      rows="3"
+                    ></textarea>
+                  </div>
+                </div>
+
+                {/* Approval Status Section */}
+                <div className="mnre-section">
+                  <h3>Approval Status</h3>
+                  <div className="form-group">
+                    <label>Status</label>
+                    <select
+                      value={mnreInstallationDraft?.approval_status || ""}
+                      onChange={(e) =>
+                        setMnreInstallationDraft({
+                          ...mnreInstallationDraft,
+                          approval_status: e.target.value
+                        })
+                      }
+                      className="form-control"
+                    >
+                      <option value="">-- Select --</option>
+                      <option value="Approved">Approved</option>
+                      <option value="Returned">Returned</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label>Comments</label>
+                    <textarea
+                      value={mnreInstallationDraft?.approval_comments || ""}
+                      onChange={(e) =>
+                        setMnreInstallationDraft({
+                          ...mnreInstallationDraft,
+                          approval_comments: e.target.value
+                        })
+                      }
+                      className="form-control"
+                      placeholder="Enter approval comments..."
+                      rows="3"
+                    ></textarea>
+                  </div>
+                </div>
+
+                {/* Subsidy Status Section */}
+                <div className="mnre-section">
+                  <h3>Subsidy Status</h3>
+                  <div className="form-group">
+                    <label>Status</label>
+                    <select
+                      value={mnreInstallationDraft?.subsidy_status || ""}
+                      onChange={(e) =>
+                        setMnreInstallationDraft({
+                          ...mnreInstallationDraft,
+                          subsidy_status: e.target.value
+                        })
+                      }
+                      className="form-control"
+                    >
+                      <option value="">-- Select --</option>
+                      <option value="Received">Received</option>
+                      <option value="Returned">Returned</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label>Comments</label>
+                    <textarea
+                      value={mnreInstallationDraft?.subsidy_comments || ""}
+                      onChange={(e) =>
+                        setMnreInstallationDraft({
+                          ...mnreInstallationDraft,
+                          subsidy_comments: e.target.value
+                        })
+                      }
+                      className="form-control"
+                      placeholder="Enter subsidy comments..."
+                      rows="3"
+                    ></textarea>
+                  </div>
+                </div>
               </div>
             )}
+
+            {/* Action Buttons - Centered at bottom */}
+            <div className="mnre-actions">
+              {!mnreInstallationEdit ? (
+                <button
+                  className="mnre-save-btn"
+                  onClick={() => {
+                    setMnreInstallationEdit(true);
+                    if (!mnreInstallationDraft) {
+                      setMnreInstallationDraft({
+                        installation_status: mnreInstallation?.installation_status || "",
+                        installation_comments: mnreInstallation?.installation_comments || "",
+                        approval_status: mnreInstallation?.approval_status || "",
+                        approval_comments: mnreInstallation?.approval_comments || "",
+                        subsidy_status: mnreInstallation?.subsidy_status || "",
+                        subsidy_comments: mnreInstallation?.subsidy_comments || ""
+                      });
+                    }
+                  }}
+                >
+                  Update MNRE Installation Details
+                </button>
+              ) : (
+                <>
+                  <button className="mnre-save-btn" onClick={handleMnreInstallationSave} disabled={mnreInstallationSaveLoading}>{mnreInstallationSaveLoading ? <><span className="spinner"></span> Saving...</> : "Save"}</button>
+                  <button
+                    className="mnre-cancel-btn"
+                    onClick={() => {
+                      setMnreInstallationEdit(false);
+                      setMnreInstallationDraft(mnreInstallation);
+                    }}
+                    disabled={loading}
+                  >
+                    Cancel
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         )}
 
         {/* ================= SERVICE TAB ================= */}
         {activeTab === "service" && (
           <div className="service-section">
-            <div className="service-header"><h2>Service Logs</h2><button onClick={handleServiceAdd}>+ Add Service</button></div>
+            <div className="service-header"><h2>Service</h2><button onClick={handleServiceAdd}>+ Add Service</button></div>
             {!serviceFormOpen ? (
               <div className="service-list">
-                {services.map((s, index) => (
-                  <div className="service-card" key={s.id}>
-                    <p><b>Date:</b> {s.date}</p>
-                    <div className="image-preview">{s.images?.map((img, i) => <img key={i} src={renderMediaUrl(img)} alt="" />)}</div>
-                    <button onClick={() => handleServiceEdit(index)}>Edit</button>
-                    <button onClick={() => handleServiceDelete(s.id)}>Delete</button>
-                  </div>
-                ))}
+                {/* 💡 FIX: Destructured the items into map first instead of directly pulling reversing array index to avoid Edit UI Populating index mismatch errors */}
+                {[...services].reverse().map((s, mappedIndex) => {
+                  // Find the authentic index matches from original state array
+                  const originalIndex = services.findIndex(item => item.id === s.id);
+                  return (
+                    <div className="service-card" key={s.id}>
+                      <h4>Service Logs</h4>
+                      <p><b>Date:</b> {s.date}</p>
+                      <p><b>Comments:</b> {s.comments}</p>
+                      <div className="image-preview">
+                        {s.images?.map((img, i) => (
+                          // 💡 FIX: Using structural cloud image path wrapper to safely point rendering to Cloudinary URL
+                          <a key={i} href={renderMediaUrl(img)} target="_blank" rel="noopener noreferrer">
+                            <img src={renderMediaUrl(img)} alt="" />
+                          </a>
+                        ))}
+                      </div>
+                      <div className="actions">
+                        <button onClick={() => handleServiceEdit(originalIndex)}>Edit</button>
+                        <button onClick={() => handleServiceDelete(s.id)}>Delete</button>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             ) : (
-              <div>
+              <div className="service-form">
+                <h3>{serviceEditIndex !== null ? "Edit Service" : "Add Service"}</h3>
                 <input type="date" value={serviceForm.date} onChange={(e) => setServiceForm({ ...serviceForm, date: e.target.value })} />
                 <input type="file" multiple onChange={handleServiceImageChange} />
-                <button onClick={handleServiceSave}>Save Entry</button>
+                <div className="image-preview">
+                  {serviceForm.existingImages.map((img, i) => (
+                    <div className="img-box" key={i}>
+                      {/* 💡 FIX: Used renderMediaUrl wrapper here inside editing screen maps */}
+                      <img src={renderMediaUrl(img)} alt="" />
+                      <span onClick={() => removeServiceExistingImage(i)}>❌</span>
+                    </div>
+                  ))}
+                  {serviceForm.images.map((img, i) => (
+                    <div className="img-box" key={i}>
+                      <img src={URL.createObjectURL(img)} alt="" />
+                      <span onClick={() => removeServiceNewImage(i)}>❌</span>
+                    </div>
+                  ))}
+                </div>
+                <textarea placeholder="Comments" value={serviceForm.comments} onChange={(e) => setServiceForm({ ...serviceForm, comments: e.target.value })} />
+                <div className="form-actions">
+                  <button onClick={handleServiceSave} disabled={serviceSaveLoading}>{serviceSaveLoading ? <><span className="spinner"></span> Saving...</> : "Save"}</button>
+                  <button onClick={() => setServiceFormOpen(false)}>Cancel</button>
+                </div>
               </div>
             )}
           </div>

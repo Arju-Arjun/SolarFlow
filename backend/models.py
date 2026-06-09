@@ -7,7 +7,7 @@ import json
 # CONSTANTS
 # =========================
 
-DEFAULT_IMAGE = "/backend/static/uploads/profile_photo/default.png"
+DEFAULT_IMAGE = "https://kommodo.ai/i/KwK1jbRDvnZNthQanKSt"
 
 
 # =========================

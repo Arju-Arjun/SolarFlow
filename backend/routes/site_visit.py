@@ -2,8 +2,8 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from extensions import db
 from models import SiteVisit, Customer
-# Imported both your upload and delete utilities here:
-from utils import upload_to_cloud, delete_from_cloudinary
+# Standardized to use delete_to_cloud exclusively
+from utils import upload_to_cloud, delete_to_cloud
 import json
 
 # =========================
@@ -192,18 +192,14 @@ def update_site_visit(id):
         d.ownership_change = request.form.get("ownership_change", d.ownership_change)
         d.location = request.form.get("location", d.location)
 
-        # File processing framework checking for database field replacements
+        # File Fields Processing (With accurate delete_to_cloud mapping)
         def update_field_file(field_name, target_folder):
             file = request.files.get(field_name)
             if file and file.filename:
-                # 1. Look up any existing active secure Cloudinary link
-                old_file_url = getattr(d, field_name, None)
-                
-                # 2. Safely trigger data removal execution inside Cloudinary
+                old_file_url = getattr(d, field_name)
                 if old_file_url:
-                    delete_from_cloudinary(old_file_url)
+                    delete_to_cloud(old_file_url)
                 
-                # 3. Handle incoming replacement asset payload routing
                 cloud_url = upload_to_cloud(file, folder_name=f"solar_flow/site_visits/{target_folder}")
                 if cloud_url:
                     setattr(d, field_name, cloud_url)
@@ -218,10 +214,18 @@ def update_site_visit(id):
         update_field_file("building_tax", "property_records")
         update_field_file("signature", "signatures")
 
-        # Multi-image structural asset synchronization
+        # Multi-image synchronization
         existing_images_param = request.form.get("existing_images")
-        if existing_images_param:
+        
+        # Checked via 'is not None' so empty arrays ([]) are parsed smoothly
+        if existing_images_param is not None:
             new_list = json.loads(existing_images_param)
+            old_images_list = json.loads(d.images) if d.images else []
+            
+            for old_url in old_images_list:
+                if old_url not in new_list:
+                    delete_to_cloud(old_url)
+                    
             d.images = json.dumps(new_list)
 
         new_images = request.files.getlist("images")
@@ -254,6 +258,23 @@ def update_site_visit(id):
 def delete_site_visit(id):
     try:
         d = SiteVisit.query.get_or_404(id)
+        
+        # Purge unique documents from hosting repository
+        file_fields = [
+            "quotation_file", "agreement_file", "aadhaar", "pan", 
+            "kseb_bill", "bank_passbook", "land_tax", "building_tax", "signature"
+        ]
+        for field in file_fields:
+            file_url = getattr(d, field)
+            if file_url:
+                delete_to_cloud(file_url)
+                
+        # Purge multiple field image lists
+        if d.images:
+            image_urls = json.loads(d.images)
+            for url in image_urls:
+                delete_to_cloud(url)
+
         db.session.delete(d)
         db.session.commit()
         return jsonify({"message": "Deleted successfully"}), 200

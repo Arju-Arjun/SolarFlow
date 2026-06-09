@@ -4,11 +4,13 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required
 from extensions import db
 from models import Mnre, Customer, MnreInstallation
-# Imported delete utility alongside your upload tool
-from utils import upload_to_cloud, delete_from_cloudinary
+from utils import upload_to_cloud, delete_to_cloud
 
 mnre_bp = Blueprint("mnre_bp", __name__, url_prefix="/api/mnre")
 
+# ==========================================
+# SAVE OR UPDATE MNRE ENTRY
+# ==========================================
 @mnre_bp.route("/<int:customer_id>", methods=["POST", "PUT"])
 @jwt_required()
 def save_mnre_entry(customer_id):
@@ -20,17 +22,17 @@ def save_mnre_entry(customer_id):
 
     enabled = data.get("enabled", "true").lower() == "true"
 
+   
     if not enabled:
         if mnre_entry:
-            # Clean up files from storage if row is dropped via toggle switch
             if mnre_entry.feasibility_file:
-                delete_from_cloudinary(mnre_entry.feasibility_file)
+                delete_to_cloud(mnre_entry.feasibility_file)
             if mnre_entry.ack_file:
-                delete_from_cloudinary(mnre_entry.ack_file)
+                delete_to_cloud(mnre_entry.ack_file)
                 
             db.session.delete(mnre_entry)
             db.session.commit()
-        return jsonify({"message": "MNRE deleted"}), 200
+        return jsonify({"message": "deleted successfully"}), 200
 
     if not mnre_entry:
         mnre_entry = Mnre(customer_id=customer_id, created_at=now)
@@ -40,26 +42,24 @@ def save_mnre_entry(customer_id):
     mnre_entry.mnre_status = data.get("mnre_status")
     mnre_entry.comments = data.get("comments")
 
+    # Feasibility File Processing with Cloud Overwrite Cleanup
     if "feasibility_file" in request.files:
         file = request.files["feasibility_file"]
         if file and file.filename:
-            # 1. Purge the existing file asset from Cloudinary storage if present
             if mnre_entry.feasibility_file:
-                delete_from_cloudinary(mnre_entry.feasibility_file)
-            
-            # 2. Upload incoming replacement document safely
+                delete_to_cloud(mnre_entry.feasibility_file)
+                
             cloud_url = upload_to_cloud(file, folder_name="solar_flow/mnre/feasibility")
             if cloud_url:
                 mnre_entry.feasibility_file = cloud_url
 
+    # Acknowledgment File Processing with Cloud Overwrite Cleanup
     if "ack_file" in request.files:
         file = request.files["ack_file"]
         if file and file.filename:
-            # 1. Purge the existing acknowledgment file asset from storage
             if mnre_entry.ack_file:
-                delete_from_cloudinary(mnre_entry.ack_file)
+                delete_to_cloud(mnre_entry.ack_file)
                 
-            # 2. Upload incoming replacement acknowledgment file safely
             cloud_url = upload_to_cloud(file, folder_name="solar_flow/mnre/acknowledgments")
             if cloud_url:
                 mnre_entry.ack_file = cloud_url
@@ -68,6 +68,10 @@ def save_mnre_entry(customer_id):
     db.session.commit()
     return jsonify(mnre_entry.to_dict()), 200
 
+
+# ==========================================
+# GET MNRE ENTRY BY CUSTOMER ID
+# ==========================================
 @mnre_bp.route("/<int:customer_id>", methods=["GET"])
 @jwt_required()
 def get_mnre_entry(customer_id):
@@ -76,6 +80,10 @@ def get_mnre_entry(customer_id):
         return jsonify({"exists": False, "data": None}), 200
     return jsonify({"exists": True, "data": mnre_entry.to_dict()}), 200
 
+
+# ==========================================
+# DELETE MNRE ENTRY
+# ==========================================
 @mnre_bp.route("/<int:customer_id>", methods=["DELETE"])
 @jwt_required()
 def delete_mnre_entry(customer_id):
@@ -83,16 +91,20 @@ def delete_mnre_entry(customer_id):
     if not mnre_entry:
         return jsonify({"error": "MNRE entry not found"}), 404
 
-    # Purge all assigned documentation files from cloud storage on row destruction
+   
     if mnre_entry.feasibility_file:
-        delete_from_cloudinary(mnre_entry.feasibility_file)
+        delete_to_cloud(mnre_entry.feasibility_file)
     if mnre_entry.ack_file:
-        delete_from_cloudinary(mnre_entry.ack_file)
+        delete_to_cloud(mnre_entry.ack_file)
 
     db.session.delete(mnre_entry)
     db.session.commit()
-    return jsonify({"message": "MNRE entry deleted successfully"}), 200
+    return jsonify({"message": "deleted successfully"}), 200
 
+
+# ==========================================
+# GET MNRE INSTALLATION RECORD
+# ==========================================
 @mnre_bp.route("/installation/<int:customer_id>", methods=["GET"])
 @jwt_required()
 def get_mnre_installation(customer_id):
@@ -101,6 +113,10 @@ def get_mnre_installation(customer_id):
         return jsonify({"error": "MNRE Installation record not found"}), 404
     return jsonify(installation.to_dict()), 200
 
+
+# ==========================================
+# CREATE MNRE INSTALLATION RECORD
+# ==========================================
 @mnre_bp.route("/installation/<int:customer_id>", methods=["POST"])
 @jwt_required()
 def create_mnre_installation(customer_id):
@@ -130,6 +146,10 @@ def create_mnre_installation(customer_id):
     db.session.commit()
     return jsonify(installation.to_dict()), 201
 
+
+# ==========================================
+# UPDATE MNRE INSTALLATION RECORD
+# ==========================================
 @mnre_bp.route("/installation/<int:customer_id>", methods=["PUT"])
 @jwt_required()
 def update_mnre_installation(customer_id):
@@ -149,6 +169,10 @@ def update_mnre_installation(customer_id):
     db.session.commit()
     return jsonify(installation.to_dict()), 200
 
+
+# ==========================================
+# DELETE MNRE INSTALLATION RECORD
+# ==========================================
 @mnre_bp.route("/installation/<int:customer_id>", methods=["DELETE"])
 @jwt_required()
 def delete_mnre_installation(customer_id):
@@ -158,4 +182,4 @@ def delete_mnre_installation(customer_id):
     
     db.session.delete(installation)
     db.session.commit()
-    return jsonify({"message": "MNRE Installation record deleted successfully"}), 200
+    return jsonify({"message": "deleted successfully"}), 200
