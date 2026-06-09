@@ -24,9 +24,14 @@ const getGoogleMapsUrl = (location) => {
 
 const renderMediaUrl = (path) => {
   if (!path) return "https://cdn.corenexis.com/files/c/5589175720.jpg";
+
   if (path.startsWith("http://") || path.startsWith("https://")) {
+    if (path.includes("raw/upload") && path.endsWith(".pdf")) {
+      return path.replace("raw/upload", "image/upload");
+    }
     return path;
   }
+
   return `${process.env.REACT_APP_BASE_URL}${path}`;
 };
 
