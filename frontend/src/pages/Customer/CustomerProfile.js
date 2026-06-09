@@ -1119,9 +1119,28 @@ const CustomerProfile = () => {
                 <div className="form-section">
                   <h5>Files</h5>
                   <div className="doc-view">
-                    {siteVisit.quotation_file && <a href={renderMediaUrl(siteVisit.quotation_file)} target="_blank" rel="noopener noreferrer" className="doc-link">📄 Quotation</a>}
-                    {siteVisit.agreement_file && <a href={renderMediaUrl(siteVisit.agreement_file)} target="_blank" rel="noopener noreferrer" className="doc-link">📄 Agreement</a>}
-                  </div>
+  {siteVisit.quotation_file && (
+    <a 
+      href={`https://docs.google.com/gview?url=${encodeURIComponent(renderMediaUrl(siteVisit.quotation_file))}&embedded=true`} 
+      target="_blank" 
+      rel="noopener noreferrer" 
+      className="doc-link"
+    >
+      📄 Quotation
+    </a>
+  )}
+  
+  {siteVisit.agreement_file && (
+    <a 
+      href={`https://docs.google.com/gview?url=${encodeURIComponent(renderMediaUrl(siteVisit.agreement_file))}&embedded=true`} 
+      target="_blank" 
+      rel="noopener noreferrer" 
+      className="doc-link"
+    >
+      📄 Agreement
+    </a>
+  )}
+</div>
                 </div>
                 <div className="form-section">
                   <h5>Documents</h5>
