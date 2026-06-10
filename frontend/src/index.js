@@ -13,7 +13,7 @@ root.render(<App />);
 if ("serviceWorker" in navigator && "PushManager" in window) {
   window.addEventListener("load", () => {
     navigator.serviceWorker
-      .register("/service-worker") // Points directly to public/service-worker
+      .register("/service-worker.js") // Points directly to public/service-worker.js
       .then((registration) => {
         console.log("Service Worker registered successfully:", registration);
       })
