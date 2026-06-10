@@ -42,3 +42,4 @@ class Config:
 
     # ================= UPLOAD =================
     UPLOAD_FOLDER = os.getenv("UPLOAD_FOLDER", str(basedir / "uploads"))
+    VAPID_PRIVATE_KEY = os.getenv("VAPID_PRIVATE_KEY", "0hK7R1ZzCenTz8yXz_A9K_m1T4N_W7vC0bW8O5W5xZ8=")
