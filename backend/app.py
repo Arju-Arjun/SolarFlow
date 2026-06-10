@@ -29,7 +29,14 @@ def create_app():
     )
 
     # ================= CONFIG =================
+# ================= CONFIG =================
     app.config.from_object(Config)
+
+    # 💡 NEW: PWA Web Push VAPID Keys Configuration
+    app.config["VAPID_PRIVATE_KEY"] = os.environ.get("VAPID_PRIVATE_KEY") or "_sY5K5xZ9Y7C0bW8O5W5xZ9Y7C0bW8O5W5xZ9Y7C0bW8="
+    app.config["VAPID_CLAIMS"] = {
+        "sub": "mailto:arjun.ai.tinos@gmail.com"
+    }
 
     # ================= CLOUDINARY CONFIG =================
     cloudinary.config(

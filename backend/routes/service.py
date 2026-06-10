@@ -5,9 +5,10 @@ from datetime import datetime
 from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import jwt_required
 from extensions import db
-from models import Service, Customer, NotificationAlert
 from utils import upload_to_cloud, delete_to_cloud
-
+from pywebpush import webpush, WebPushException
+from models import Service, Customer, NotificationAlert, PushSubscription # 💡 Added PushSubscription model
+import os
 service_bp = Blueprint("service_bp", __name__, url_prefix="/api/services")
 
 
@@ -15,13 +16,13 @@ def trigger_delayed_alert_simulation(app_instance, user_id, customer_name, custo
     """
     Background worker thread simulating a maintenance interval lifecycle.
     Total cycle duration: 20 seconds.
-    Triggers the alert row 2 seconds before the full cycle ends (at 18 seconds).
+    Triggers both DB alert and PWA Web Push notification at 18 seconds.
     """
-    # Sleep for 18 seconds (2 seconds before the 20-second test interval completes)
     time.sleep(18)
     
     with app_instance.app_context():
         try:
+            # 1. Save In-App Notification Alert row to DB
             alert = NotificationAlert(
                 user_id=user_id,
                 customer_id=customer_id,
@@ -31,10 +32,44 @@ def trigger_delayed_alert_simulation(app_instance, user_id, customer_name, custo
             db.session.add(alert)
             db.session.commit()
             print(f"[Alert System] Notification successfully queued for User ID {user_id}")
-        except Exception as ex:
-            db.session.rollback()
-            print(f"[Alert System] Failed to write database alert notification: {str(ex)}")
 
+            # 2. Fetch all active PWA web push subscriptions for this user
+            subscriptions = PushSubscription.query.filter_by(user_id=user_id).all()
+            
+            # Message Payload to show on mobile screen background
+            push_payload = json.dumps({
+                "title": "Solar Maintenance Due Soon 🛠️",
+                "body": f"Scheduled service cycle for {customer_name} finishes in 2 seconds.",
+                "url": f"/customer/{customer_id}?tab=service" # Directly deep-links to the customer service tab!
+            })
+
+            # Send the push payload to each device subscription link found
+            for sub in subscriptions:
+                try:
+                    webpush(
+                        subscription_info={
+                            "endpoint": sub.endpoint,
+                            "keys": {
+                                "p256dh": sub.p256dh,
+                                "auth": sub.auth
+                            }
+                        },
+                        data=push_payload,
+                        # Pass your VAPID keys set inside Flask config or environment
+                        vapid_private_key=current_app.config.get("VAPID_PRIVATE_KEY") or os.environ.get("VAPID_PRIVATE_KEY"),
+                        vapid_claims={"sub": "mailto:admin@solarflow.com"},
+                    )
+                    print(f"[PWA Push] Successfully dispatched network packet to device endpoint.")
+                except WebPushException as ex:
+                    print(f"[PWA Push] Endpoint failed or expired. Error: {str(ex)}")
+                    # If the token is expired/invalid (410 Gone), safely remove it from DB
+                    if ex.response and ex.response.status_code in [404, 410]:
+                        db.session.delete(sub)
+                        db.session.commit()
+
+        except Exception as e:
+            db.session.rollback()
+            print(f"[Alert System] Global notification thread crash: {str(e)}")
 
 # ==========================================
 # CREATE SERVICE
@@ -238,3 +273,41 @@ def delete_notification(alert_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
+    
+
+# ==========================================
+# SAVE PWA PUSH SUBSCRIPTION TOKEN FROM BROWSER
+# ==========================================
+@service_bp.route("/save-subscription", methods=["POST"])
+@jwt_required()
+def save_push_subscription():
+    try:
+        from flask_jwt_extended import get_jwt_identity
+        current_user_id = get_jwt_identity()
+        
+        subscription_data = request.get_json()
+        if not subscription_data or "endpoint" not in subscription_data:
+            return jsonify({"error": "Invalid subscription data payload"}), 400
+
+        # Check if this endpoint link already exists in our records
+        existing_sub = PushSubscription.query.filter_by(endpoint=subscription_data["endpoint"]).first()
+        if existing_sub:
+            existing_sub.user_id = current_user_id # Re-assign to current logged in user account context
+            db.session.commit()
+            return jsonify({"message": "Subscription token refreshed successfully"}), 200
+
+        # Create new active device connection row entry inside db
+        new_subscription = PushSubscription(
+            user_id=current_user_id,
+            endpoint=subscription_data["endpoint"],
+            p256dh=subscription_data["keys"]["p256dh"],
+            auth=subscription_data["keys"]["auth"]
+        )
+        
+        db.session.add(new_subscription)
+        db.session.commit()
+        return jsonify({"message": "PWA Web Push subscription mapped successfully"}), 201
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500  

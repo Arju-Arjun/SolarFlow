@@ -220,12 +220,14 @@ export const serviceAPI = {
 };
 
 // =========================
-// NOTIFICATION ALERTS
+// NOTIFICATION ALERTS & PWA PUSH
 // =========================
 export const notificationAPI = {
   getUnreadAlerts: () => get("/services/notifications"),
   markAsRead: () => post("/services/notifications/read"),
-  deleteAlert: (alertId) => remove(`/services/notifications/${alertId}`), // 💡 Added delete handler
+  deleteAlert: (alertId) => remove(`/services/notifications/${alertId}`),
+  // 💡 NEW: Sends PWA web push subscription token payload to Flask backend
+  saveSubscription: (subscriptionPayload) => post("/services/save-subscription", subscriptionPayload),
 };
 
 export default api;

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Link, useNavigate } from "react-router-dom"; // useNavigate will handle the redirection
+import { Link, useNavigate } from "react-router-dom"; 
 import { clearAuthToken, getAuthUser } from "../auth";
 import { FaBell, FaTimes } from "react-icons/fa";
 import { notificationAPI } from "../api";
@@ -43,6 +43,76 @@ function Dashboard() {
   }, [user]);
 
   // ==========================================================================
+  // 💡 NEW: PWA PUSH NOTIFICATION PERMISSION & SUBSCRIPTION LOGIC
+  // ==========================================================================
+  useEffect(() => {
+    if (!user) return;
+
+    const configurePushSubscription = async () => {
+      try {
+        // 1. Verify if Service Workers and Push Notification subsystems are natively supported
+        if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+          console.warn("Push messaging infrastructure is not supported in this client environment.");
+          return;
+        }
+
+        // 2. Wait until the service worker lifecycle transitions to active/ready baseline
+        const registration = await navigator.serviceWorker.ready;
+
+        // 3. Inspect if an established push pipeline channel exists on this client context
+        let subscription = await registration.pushManager.getSubscription();
+
+        // 4. Request notification permissions from user if not granted yet
+        if (!subscription && Notification.permission !== "denied") {
+          const permission = await Notification.requestPermission();
+          
+          if (permission === "granted") {
+            // Your VAPID Public Key generated or assigned inside environment configurations
+            // Convert plain text base64 key to format needed by subscribe process
+            const VAPID_PUBLIC_KEY = process.env.REACT_APP_VAPID_PUBLIC_KEY || "YOUR_PUBLIC_VAPID_KEY_HERE";
+            
+            const convertedKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+
+            subscription = await registration.pushManager.subscribe({
+              userVisibleOnly: true,
+              applicationServerKey: convertedKey
+            });
+
+            // 5. Structure the key arrays into raw strings safe for database mapping
+            const rawSubscriptionPayload = {
+              endpoint: subscription.endpoint,
+              keys: {
+                p256dh: btoa(String.fromCharCode.apply(null, new Uint8Array(subscription.getKey("p256dh")))),
+                auth: btoa(String.fromCharCode.apply(null, new Uint8Array(subscription.getKey("auth"))))
+              }
+            };
+
+            // 6. Transmit structural network registration data packet to Flask backend schema channels
+            await notificationAPI.saveSubscription(rawSubscriptionPayload);
+            console.log("[PWA Push] Device subscription payload synchronized with system backend.");
+          }
+        }
+      } catch (err) {
+        console.error("[PWA Push] Failed to establish structural background sync pipeline:", err);
+      }
+    };
+
+    configurePushSubscription();
+  }, [user]);
+
+  // Utility helper to safely convert application server string keys to Uint8Array sequences
+  const urlBase64ToUint8Array = (base64String) => {
+    const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; ++i) {
+      outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+  };
+
+  // ==========================================================================
   // CLOSE DROPDOWN WHEN CLICKING ANYWHERE OUTSIDE
   // ==========================================================================
   useEffect(() => {
@@ -72,7 +142,7 @@ function Dashboard() {
   // CLEAR SPECIFIC MESSAGE FROM DB
   // ==========================================================================
   const handleClearAlert = async (e, alertId) => {
-    e.stopPropagation(); // Prevents triggers on the parent item click redirect flow
+    e.stopPropagation(); 
     try {
       await notificationAPI.deleteAlert(alertId);
       setNotificationsList(prev => prev.filter(item => item.id !== alertId));
@@ -82,11 +152,11 @@ function Dashboard() {
   };
 
   // ==========================================================================
-  // 💡 NEW: REDIRECT USER TO CUSTOMER PROFILE ON ITEM CLICK
+  // REDIRECT USER TO CUSTOMER PROFILE ON ITEM CLICK
   // ==========================================================================
   const handleNotificationClick = (customerId) => {
-    setShowNotifications(false); // Closes the dropdown panel context
-    navigate(`/customer/${customerId}`); // 💡 Fixed path to match http://localhost:3000/customer/3
+    setShowNotifications(false); 
+    navigate(`/customer/${customerId}`); 
   };
 
   return (
@@ -112,7 +182,6 @@ function Dashboard() {
                 <p className="empty-text">No new notifications</p>
               ) : (
                 notificationsList.map((alert) => (
-                  /* 💡 Added onClick mapping and 'clickable-item' style handle */
                   <div 
                     key={alert.id} 
                     className="notification-item clickable-item"
