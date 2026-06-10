@@ -711,7 +711,6 @@ button:hover {
   transform: translateX(3px); /* Subtle nudge forward */
 }
 
-
 /* =========================
    DASHBOARD
 ========================= */
@@ -725,6 +724,7 @@ button:hover {
   text-align: center;
   margin-bottom: 3rem;
   padding: 2rem 0;
+  position: relative;
 }
 
 .dashboard-header h1 {
@@ -740,7 +740,6 @@ button:hover {
   color: #64748b;
   font-size: 1.1rem;
 }
-
 .grid-two {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -5196,4 +5195,120 @@ button:disabled:hover {
 
 
 
+.notification-bell-wrapper {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  display: inline-block;
+  z-index: 10;
+}
 
+.favbell {
+  color: #555555;
+  transition: color 0.2s ease, transform 0.1s ease;
+  vertical-align: middle;
+}
+
+
+
+.notification-badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 10px;
+  height: 10px;
+  background-color: #ef4444;
+  border-radius: 50%;
+  border: 2px solid #ffffff;
+}
+
+/* 💡 Increased width from 250px to 350px for better viewing space */
+.notification-dropdown {
+  position: absolute;
+  right: 0;
+  top: 35px;
+  background-color: #ffffff;
+  box-shadow: 0px 4px 16px rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+  padding: 15px;
+  width: 350px; 
+  max-height: 400px;
+  overflow-y: auto;
+  z-index: 100;
+  border: 1px solid #eaeaea;
+  text-align: left;
+}
+
+.notification-dropdown h4 {
+  margin: 0 0 10px 0;
+  color: #333333;
+  font-size: 16px;
+  border-bottom: 1px solid #eeeeee;
+  padding-bottom: 8px;
+}
+
+.notification-dropdown .empty-text {
+  margin: 0;
+  color: #777777;
+  font-size: 14px;
+  text-align: center;
+  padding: 15px 0;
+}
+
+/* Flex layout layout splitting alert message contents and X clean button */
+.notification-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 4px;
+  border-bottom: 1px solid #f1f5f9;
+  gap: 12px;
+}
+
+.notification-item:last-child {
+  border-bottom: none;
+}
+
+.notification-content {
+  flex: 1;
+}
+
+.notification-item h5 {
+  margin: 0 0 4px 0;
+  color: #1e293b;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.notification-item p {
+  margin: 0;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+/* 💡 Styling for the X clear close button */
+.clear-alert-btn {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.clear-alert-btn:hover {
+  background-color: #fee2e2;
+  color: #ef4444;
+}
+
+
+.clickable-item:hover {
+  background-color: #f8fafc; /* Changes background color subtly on hover */
+}

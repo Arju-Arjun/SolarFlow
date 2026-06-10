@@ -93,9 +93,9 @@ const CustomerProfile = () => {
   }, [location.search]);
 
   const handleTabSelect = (tabKey) => {
-    setActiveTab(tabKey);
-    setMenuOpen(false);
-  };
+  navigate(`/customer/${id}?tab=${tabKey}`); 
+  setMenuOpen(false);
+};
   
   const [profileImage, setProfileImage] = useState(null);
 
@@ -984,11 +984,11 @@ const CustomerProfile = () => {
         </div>
 
         {!isMobile && (
-          <div className="tab-menu">
-            <div className="back-btn" onClick={() => navigate(-1)}><FaArrowLeft /></div>
-            {customerTabs.map((tab) => (
-              <button key={tab.key} className={activeTab === tab.key ? "active" : ""} onClick={() => setActiveTab(tab.key)}>{tab.label}</button>
-            ))}
+            <div className="tab-menu">
+              <div className="back-btn" onClick={() => navigate(-1)}><FaArrowLeft /></div>
+              {customerTabs.map((tab) => (
+                <button key={tab.key} className={activeTab === tab.key ? "active" : ""} onClick={() => navigate(`/customer/${id}?tab=${tab.key}`)}>{tab.label}</button>
+              ))}
             <div className="home-icon" onClick={() => navigate("/dashboard")}><FaHome /></div>
             <div className="forward-btn" onClick={() => navigate(1)}><FaArrowRight /></div>
                </div>

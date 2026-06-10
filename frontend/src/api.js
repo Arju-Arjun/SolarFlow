@@ -219,4 +219,13 @@ export const serviceAPI = {
   deleteService: (serviceId) => remove(`/services/${serviceId}`),
 };
 
+// =========================
+// NOTIFICATION ALERTS
+// =========================
+export const notificationAPI = {
+  getUnreadAlerts: () => get("/services/notifications"),
+  markAsRead: () => post("/services/notifications/read"),
+  deleteAlert: (alertId) => remove(`/services/notifications/${alertId}`), // 💡 Added delete handler
+};
+
 export default api;
