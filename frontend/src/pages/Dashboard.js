@@ -69,8 +69,7 @@ function Dashboard() {
           if (permission === "granted") {
             // Your VAPID Public Key generated or assigned inside environment configurations
             // Convert plain text base64 key to format needed by subscribe process
-            const VAPID_PUBLIC_KEY = process.env.REACT_APP_VAPID_PUBLIC_KEY || "BC8aT_X29G8H8wWnW9-Y7C0bW8O5W5xZ9Y7C0bW8O5W5xZ9Y7C0bW8O5W5xZ9Y7C0bW8O5W5xZ9Y7C0bW8O5W5xZ==";
-            
+            const VAPID_PUBLIC_KEY = process.env.REACT_APP_VAPID_PUBLIC_KEY 
             const convertedKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
 
             subscription = await registration.pushManager.subscribe({
