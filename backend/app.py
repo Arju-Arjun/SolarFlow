@@ -33,7 +33,7 @@ def create_app():
     app.config.from_object(Config)
 
     # 💡 UPDATED: 100% Genuine Private VAPID Key matched with the public key
-    app.config["VAPID_PRIVATE_KEY"] = os.environ.get("VAPID_PRIVATE_KEY") or "0hK7R1ZzCenTz8yXz_A9K_m1T4N_W7vC0bW8O5W5xZ8="
+    app.config["VAPID_PRIVATE_KEY"] = os.environ.get("VAPID_PRIVATE_KEY") or "MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgaXMM2m4jMS3SZ5sjOmwv5hMI1ysew3cVaIn5TOStfk+hRANCAAQ+nI8fiePwwiliAfTwJYi1alvU+EEXCuykttXhSUqn5XVPVPKdJNu5Rx9wIVh24bSvcaRuorMvXsQEJERlN5nH"
     app.config["VAPID_CLAIMS"] = {
         "sub": "mailto:arjun.ai.tinos@gmail.com"
     }

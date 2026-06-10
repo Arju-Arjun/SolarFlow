@@ -67,11 +67,20 @@ function Dashboard() {
           const permission = await Notification.requestPermission();
           
           if (permission === "granted") {
-            // Your VAPID Public Key generated or assigned inside environment configurations
-            // Convert plain text base64 key to format needed by subscribe process
-            const VAPID_PUBLIC_KEY = process.env.REACT_APP_VAPID_PUBLIC_KEY || "BC8aT_X29G8H8wWnW9-Y7C0bW8O5W5xZ9Y7C0bW8O5W5xZ9Y7C0bW8O5W5xZ9Y7C0bW8O5W5xZ9Y7C0bW8O5W5xZ==";
-            
-            const convertedKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+            const VAPID_PUBLIC_KEY = process.env.REACT_APP_VAPID_PUBLIC_KEY;
+
+            if (!VAPID_PUBLIC_KEY) {
+              console.error("[PWA Push] Missing REACT_APP_VAPID_PUBLIC_KEY environment variable.");
+              return;
+            }
+
+            let convertedKey;
+            try {
+              convertedKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+            } catch (conversionError) {
+              console.error("[PWA Push] Invalid VAPID public key format:", conversionError);
+              return;
+            }
 
             subscription = await registration.pushManager.subscribe({
               userVisibleOnly: true,
@@ -102,6 +111,10 @@ function Dashboard() {
 
   // Utility helper to safely convert application server string keys to Uint8Array sequences
   const urlBase64ToUint8Array = (base64String) => {
+    if (!base64String || typeof base64String !== "string") {
+      throw new Error("VAPID public key must be a non-empty string.");
+    }
+
     const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
     const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
     const rawData = window.atob(base64);
