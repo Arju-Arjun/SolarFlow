@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { FaHome, FaBars } from "react-icons/fa";
+import { FaHome, FaBars , FaArrowLeft , FaArrowRight } from "react-icons/fa";
 import { FaLocationCrosshairs } from "react-icons/fa6";
 import {
   customersAPI,
@@ -486,7 +486,6 @@ const CustomerProfile = () => {
     }
   };
 
-  // 💡 FIX: പഴയ ഫയലുകൾ ഓവർറൈറ്റ് ചെയ്യാതെ മൾട്ടിപ്പിൾ ഫയലുകൾ അപ്പൻഡ് ചെയ്യുന്നു
   const handleSiteImageChange = (e) => {
     const files = Array.from(e.target.files);
     setSiteImages((prev) => [...prev, ...files]);
@@ -572,7 +571,7 @@ const CustomerProfile = () => {
 
       siteImages.forEach((file) => { if (file) formData.append("images", file); });
       
-      // 💡 FIX: കണ്ടീഷൻ കളഞ്ഞ് എപ്പോഴും 'existing_images' സ്ട്രിങ് ആയി പാസ്സ് ചെയ്യുന്നു. ലിസ്റ്റ് കാലിയായാലും കറക്റ്റ് ആയി അപ്ഡേറ്റ് ആകും.
+     
       formData.append("existing_images", JSON.stringify(existingImages));
 
       await siteVisitAPI.save(siteVisit?.id, formData);
@@ -661,7 +660,7 @@ const CustomerProfile = () => {
 
       paymentImages.forEach((file) => { if (file) formData.append("files", file); });
       
-      // 💡 FIX: എപ്പോഴും ലിസ്റ്റ് കറക്റ്റ് ആയി സ്ട്രിങ് ആക്കി ബാക്ക്എൻഡിലേക്ക് പാസ്സ് ചെയ്യുന്നു.
+     
       formData.append("existing_images", JSON.stringify(existingPaymentImages));
 
       const response = await paymentAPI.save(id, formData, Boolean(payment?.id));
@@ -898,7 +897,7 @@ const CustomerProfile = () => {
       formData.append("structure_installed", installationDraft?.structure_installed || false);
       formData.append("structure_comments", installationDraft?.structure_comments || "");
       
-      // 💡 FIX: ബാക്ക്എൻഡിലേക്ക് ശരിയായ കീയിൽ ലിസ്റ്റ് കറക്റ്റ് ആയി പാസ്സ് ചെയ്യുന്നു.
+      
       formData.append("existingImages", JSON.stringify(existingGeoImages));
 
       if (installationDraft?.geo_images?.length > 0) {
@@ -965,10 +964,8 @@ const CustomerProfile = () => {
 
   return (
     <div className="customer-container">
-      <div className="home-icon" onClick={() => navigate("/dashboard")}><FaHome /></div>
-
       <div className="customer-container">
-        <div className="mobile-tab-trigger">
+       <div className="mobile-tab-trigger">
           <button type="button" onClick={() => setMenuOpen((prev) => !prev)} aria-label={isMenuOpen ? "Close tabs menu" : "Open tabs menu"}><FaBars/></button>
         </div>
 
@@ -988,10 +985,13 @@ const CustomerProfile = () => {
 
         {!isMobile && (
           <div className="tab-menu">
+            <div className="back-btn" onClick={() => navigate(-1)}><FaArrowLeft /></div>
             {customerTabs.map((tab) => (
               <button key={tab.key} className={activeTab === tab.key ? "active" : ""} onClick={() => setActiveTab(tab.key)}>{tab.label}</button>
             ))}
-          </div>
+            <div className="home-icon" onClick={() => navigate("/dashboard")}><FaHome /></div>
+            <div className="forward-btn" onClick={() => navigate(1)}><FaArrowRight /></div>
+               </div>
         )}
 
         {/* ================= PROFILE TAB ================= */}
@@ -1108,10 +1108,10 @@ const CustomerProfile = () => {
                   <div className="detail-item"><label>Customer Name:</label><span>{customer.name}</span></div>
                  <div className="detail-item" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                     <label style={{ margin: 0 }}>Location:</label>
-                    <span>
+                    <span style={{fontSize:10}}>
                       {siteVisit?.location ? (
                         <a href={getGoogleMapsUrl(siteVisit.location)} target="_blank" rel="noopener noreferrer">
-                          📍 {siteVisit.location.includes(" | ") ? siteVisit.location.split(" | ")[1] : "View Map Location"}
+                          {siteVisit.location.includes(" | ") ? siteVisit.location.split(" | ")[1] : "View Map Location"}
                         </a>
                       ) : (
                         "N/A"
