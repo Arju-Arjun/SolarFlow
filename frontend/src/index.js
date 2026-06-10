@@ -1,25 +1,3 @@
-// import React from "react";
-// import ReactDOM from "react-dom/client";
-// import App from "./App";
-// import "./styles.css";
-
-// const root = ReactDOM.createRoot(document.getElementById("root"));
-
-// root.render(<App />);
-
-// // Register Service Worker
-// if ("serviceWorker" in navigator) {
-//   window.addEventListener("load", () => {
-//     navigator.serviceWorker
-//       .register("/service-worker.js")
-//       .then((registration) => {
-//         console.log("SW registered:", registration);
-//       })
-//       .catch((error) => {
-//         console.log("SW registration failed:", error);
-//       });
-//   });
-// }
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
@@ -28,3 +6,19 @@ import "./styles.css";
 const root = ReactDOM.createRoot(document.getElementById("root"));
 
 root.render(<App />);
+
+// ==========================================================================
+// 💡 NEW: REGISTER PWA SERVICE WORKER
+// ==========================================================================
+if ("serviceWorker" in navigator && "PushManager" in window) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker
+      .register("/sw.js") // Points directly to public/sw.js
+      .then((registration) => {
+        console.log("Service Worker registered successfully:", registration);
+      })
+      .catch((error) => {
+        console.error("Service Worker registration failed:", error);
+      });
+  });
+}
