@@ -55,9 +55,9 @@ def create_app():
     cors.init_app(app, resources={
         r"/api/*": {
             "origins": [
-                "https://solar-flow-jet.vercel.app",
                 "http://localhost:3000",
-                "https://sl-eosin-two.vercel.app"
+                "https://solar-flow-one.vercel.app,"
+                "https://solar-flow-9on79rddl-arju-arjuns-projects.vercel.app"
             ]
         }
     })
