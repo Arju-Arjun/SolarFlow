@@ -90,19 +90,6 @@ def create_app():
     def api_root():
         return jsonify({"status": "API running"})
 
-    # ================= STATIC FILES =================
-    @app.route("/backend/static/uploads/<path:filename>")
-    def uploaded_file(filename):
-        backend_upload_path = os.path.join(os.path.dirname(__file__), "static", "uploads")
-        if os.path.exists(os.path.join(backend_upload_path, filename)):
-            return send_from_directory(backend_upload_path, filename)
-        
-        project_root = os.path.dirname(os.path.dirname(__file__))
-        root_upload_path = os.path.join(project_root, "static", "uploads")
-        if os.path.exists(os.path.join(root_upload_path, filename)):
-            return send_from_directory(root_upload_path, filename)
-        
-        return jsonify({"message": "File not found"}), 404
 
     # ================= JWT ERRORS =================
     @jwt.invalid_token_loader

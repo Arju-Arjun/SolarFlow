@@ -33,7 +33,7 @@ class Config:
     MAIL_DEFAULT_SENDER = os.getenv("MAIL_DEFAULT_SENDER") or MAIL_USERNAME
 
     # ================= FRONTEND =================
-    FRONTEND_URL = os.getenv("FRONTEND_URL", "https://solar-flow-jet.vercel.app")
+    FRONTEND_URL = os.getenv("FRONTEND_URL")
 
     # ================= CLOUDINARY CONFIG =================
     CLOUDINARY_CLOUD_NAME = os.getenv("CLOUDINARY_CLOUD_NAME")

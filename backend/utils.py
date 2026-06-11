@@ -2,10 +2,13 @@ import os
 from flask import current_app
 from flask_mail import Message
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
-from extensions import mail
+from extensions import mail,db
 import cloudinary
 import cloudinary.uploader
 from dotenv import load_dotenv
+import json
+from pywebpush import webpush, WebPushException
+from models import NotificationAlert, PushSubscription
 
 load_dotenv()
 
@@ -134,3 +137,43 @@ def delete_to_cloud(file_url):
     except Exception as error:
         print("CLOUD REMOVAL SYSTEM ERROR:", str(error))
         return False
+    
+
+def send_user_notification(app_instance, user_id, customer_id, title, message, url_path=None):
+    with app_instance.app_context():
+        try:
+            alert = NotificationAlert(
+                user_id=user_id, customer_id=customer_id,
+                title=title, message=message
+            )
+            db.session.add(alert)
+            db.session.commit()
+            print(f"[Notification System] DB Alert saved for User ID: {user_id}")
+
+            subscriptions = PushSubscription.query.filter_by(user_id=user_id).all()
+            if not subscriptions:
+                return
+
+            push_payload = json.dumps({
+                "title": title, "body": message,
+                "url": url_path or f"/customer/{customer_id}"
+            })
+
+            for sub in subscriptions:
+                try:
+                    webpush(
+                        subscription_info={
+                            "endpoint": sub.endpoint,
+                            "keys": {"p256dh": sub.p256dh, "auth": sub.auth}
+                        },
+                        data=push_payload,
+                        vapid_private_key=app_instance.config.get("VAPID_PRIVATE_KEY") or os.environ.get("VAPID_PRIVATE_KEY"),
+                        vapid_claims={"sub": "mailto:arjun.ai.tinos@gmail.com"},
+                    )
+                except WebPushException as ex:
+                    if ex.response and ex.response.status_code in [404, 410]:
+                        db.session.delete(sub)
+                        db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            print(f"[Notification System] Global trigger error: {str(e)}")

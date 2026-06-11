@@ -5,71 +5,28 @@ from datetime import datetime
 from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import jwt_required
 from extensions import db
-from utils import upload_to_cloud, delete_to_cloud
-from pywebpush import webpush, WebPushException
-from models import Service, Customer, NotificationAlert, PushSubscription # 💡 Added PushSubscription model
-import os
+from utils import upload_to_cloud, delete_to_cloud, send_user_notification
+from models import Service, Customer, NotificationAlert, PushSubscription
+
 service_bp = Blueprint("service_bp", __name__, url_prefix="/api/services")
 
 
 def trigger_delayed_alert_simulation(app_instance, user_id, customer_name, customer_id):
     """
     Background worker thread simulating a maintenance interval lifecycle.
-    Total cycle duration: 20 seconds.
-    Triggers both DB alert and PWA Web Push notification at 18 seconds.
     """
     time.sleep(18)
     
-    with app_instance.app_context():
-        try:
-            # 1. Save In-App Notification Alert row to DB
-            alert = NotificationAlert(
-                user_id=user_id,
-                customer_id=customer_id,
-                title="Solar Maintenance Due Soon 🛠️",
-                message=f"Scheduled service cycle for {customer_name} finishes in 2 seconds."
-            )
-            db.session.add(alert)
-            db.session.commit()
-            print(f"[Alert System] Notification successfully queued for User ID {user_id}")
+    # Executing the clean shared utility function directly from utils
+    send_user_notification(
+        app_instance=app_instance,
+        user_id=user_id,
+        customer_id=customer_id,
+        title="Solar Maintenance Due Soon 🛠️",
+        message=f"Scheduled service cycle for {customer_name} finishes in 2 seconds.",
+        url_path=f"/customer/{customer_id}?tab=service"
+    )
 
-            # 2. Fetch all active PWA web push subscriptions for this user
-            subscriptions = PushSubscription.query.filter_by(user_id=user_id).all()
-            
-            # Message Payload to show on mobile screen background
-            push_payload = json.dumps({
-                "title": "Solar Maintenance Due Soon 🛠️",
-                "body": f"Scheduled service cycle for {customer_name} finishes in 2 seconds.",
-                "url": f"/customer/{customer_id}?tab=service" # Directly deep-links to the customer service tab!
-            })
-
-            # Send the push payload to each device subscription link found
-            for sub in subscriptions:
-                try:
-                    webpush(
-                        subscription_info={
-                            "endpoint": sub.endpoint,
-                            "keys": {
-                                "p256dh": sub.p256dh,
-                                "auth": sub.auth
-                            }
-                        },
-                        data=push_payload,
-                        # Pass your VAPID keys set inside Flask config or environment
-                        vapid_private_key=current_app.config.get("VAPID_PRIVATE_KEY") or os.environ.get("VAPID_PRIVATE_KEY"),
-                        vapid_claims={"sub": "mailto:admin@solarflow.com"},
-                    )
-                    print(f"[PWA Push] Successfully dispatched network packet to device endpoint.")
-                except WebPushException as ex:
-                    print(f"[PWA Push] Endpoint failed or expired. Error: {str(ex)}")
-                    # If the token is expired/invalid (410 Gone), safely remove it from DB
-                    if ex.response and ex.response.status_code in [404, 410]:
-                        db.session.delete(sub)
-                        db.session.commit()
-
-        except Exception as e:
-            db.session.rollback()
-            print(f"[Alert System] Global notification thread crash: {str(e)}")
 
 # ==========================================
 # CREATE SERVICE
@@ -109,10 +66,8 @@ def create_service(project_id):
         db.session.add(service)
         db.session.commit()
 
-        # Get the underlying production application object context safe for threading threads
         flask_app = current_app._get_current_object()
         
-        # Dispatch background lifecycle simulator thread asynchronously
         threading.Thread(
             target=trigger_delayed_alert_simulation,
             args=(flask_app, customer.user_id, customer.name, customer.id),
@@ -141,7 +96,6 @@ def update_service(id):
         if comments:
             service.comments = comments
 
-        # Multi-image Structural Synchronization
         existing_images_param = request.form.get("existingImages")
         
         if existing_images_param is not None:
@@ -154,7 +108,6 @@ def update_service(id):
             
             service.images = json.dumps(new_list)
 
-        # Uploading and appending new service images
         files = request.files.getlist("images")
         if files:
             current_images = json.loads(service.images) if service.images else []
@@ -213,7 +166,8 @@ def get_services(project_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     
-    # ==========================================
+
+# ==========================================
 # GET ALL UNREAD NOTIFICATIONS FOR LOGGED IN USER
 # ==========================================
 @service_bp.route("/notifications", methods=["GET"])
@@ -223,7 +177,6 @@ def get_user_notifications():
         from flask_jwt_extended import get_jwt_identity
         current_user_id = get_jwt_identity()
         
-        # Fetch notifications belonging to the logged-in user, ordered by newest first
         alerts = NotificationAlert.query.filter_by(
             user_id=current_user_id
         ).order_by(NotificationAlert.id.desc()).all()
@@ -243,7 +196,6 @@ def mark_notifications_as_read():
         from flask_jwt_extended import get_jwt_identity
         current_user_id = get_jwt_identity()
         
-        # Update all unread notifications for this user to is_read = True
         unread_alerts = NotificationAlert.query.filter_by(
             user_id=current_user_id, 
             is_read=False
@@ -289,14 +241,12 @@ def save_push_subscription():
         if not subscription_data or "endpoint" not in subscription_data:
             return jsonify({"error": "Invalid subscription data payload"}), 400
 
-        # Check if this endpoint link already exists in our records
         existing_sub = PushSubscription.query.filter_by(endpoint=subscription_data["endpoint"]).first()
         if existing_sub:
-            existing_sub.user_id = current_user_id # Re-assign to current logged in user account context
+            existing_sub.user_id = current_user_id 
             db.session.commit()
             return jsonify({"message": "Subscription token refreshed successfully"}), 200
 
-        # Create new active device connection row entry inside db
         new_subscription = PushSubscription(
             user_id=current_user_id,
             endpoint=subscription_data["endpoint"],
@@ -310,4 +260,4 @@ def save_push_subscription():
 
     except Exception as e:
         db.session.rollback()
-        return jsonify({"error": str(e)}), 500  
+        return jsonify({"error": str(e)}), 500
