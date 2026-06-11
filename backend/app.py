@@ -56,7 +56,7 @@ def create_app():
         r"/api/*": {
             "origins": [
                 "http://localhost:3000",
-                "https://solar-flow-one.vercel.app,"
+                "https://solar-flow-one.vercel.app",
                 "https://solar-flow-9on79rddl-arju-arjuns-projects.vercel.app"
             ]
         }
