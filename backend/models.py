@@ -10,6 +10,61 @@ import json
 DEFAULT_IMAGE = "https://kommodo.ai/i/KwK1jbRDvnZNthQanKSt"
 
 
+
+class OTP(db.Model):
+    __tablename__ = "otps"
+
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(180), unique=True, nullable=False, index=True)
+    otp = db.Column(db.String(10), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    expires_at = db.Column(db.DateTime, nullable=False)
+
+    @classmethod
+    def is_valid(cls, email, otp_code):
+        """Check if OTP is valid and not expired"""
+        otp_record = cls.query.filter_by(email=email).first()
+        if not otp_record:
+            return False
+        if datetime.utcnow() > otp_record.expires_at:
+            db.session.delete(otp_record)
+            db.session.commit()
+            return False
+        return otp_record.otp == otp_code
+
+    @classmethod
+    def store(cls, email, otp_code, ttl=300):
+        """Store or update OTP"""
+        from datetime import timedelta
+        otp_record = cls.query.filter_by(email=email).first()
+        if otp_record:
+            db.session.delete(otp_record)
+        
+        new_otp = cls(
+            email=email,
+            otp=otp_code,
+            expires_at=datetime.utcnow() + timedelta(seconds=ttl)
+        )
+        db.session.add(new_otp)
+        db.session.commit()
+
+    @classmethod
+    def delete(cls, email):
+        """Delete OTP after use"""
+        otp_record = cls.query.filter_by(email=email).first()
+        if otp_record:
+            db.session.delete(otp_record)
+            db.session.commit()
+
+    @classmethod
+    def cleanup_expired(cls):
+        """Clean up expired OTPs"""
+        cls.query.filter(cls.expires_at < datetime.utcnow()).delete()
+        db.session.commit()
+
+
+
+
 # =========================
 # USER MODEL
 # =========================

@@ -1927,9 +1927,7 @@ button:hover {
   background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
   /* border-left: 4px solid #4c3535; */
   border-radius: 10px;
-
   margin: 20px 0;
-
   color: #475569;
   font-size: 16px;
   font-weight: 600;
@@ -2445,7 +2443,7 @@ img {
 
 .kseb-registration-container {
   margin-top: 15px;
-  animation: fadeIn 0.3s ease-in-out;
+  animation: fadeIn 0.5s ease-in-out;
 }
 
 /* VIEW MODE */
@@ -2459,11 +2457,22 @@ img {
 
 
 .kseb-registration-create-message {
+  width: 100%;
+  padding: 25px;
+  flex-direction: column ;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
   text-align: center;
-  padding: 30px 20px;
-  background: linear-gradient(135deg, #f8fafc, #f1f5f9);
-  border-radius: 12px;
-  border: 2px dashed #cbd5e1;
+
+  background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+  /* border-left: 4px solid #4c3535; */
+  border-radius: 10px;
+  margin: 20px 0;
+  color: #475569;
+  font-size: 16px;
+  font-weight: 600;
 }
 
 .kseb-registration-create-message p {
@@ -3457,11 +3466,22 @@ textarea.form-control {
 }
 
 .dcr-create-message {
+ width: 100%;
+  padding: 25px;
+  flex-direction: column ;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
   text-align: center;
-  padding: 40px 20px;
-  background: linear-gradient(135deg, #f8fafc, #f1f5f9);
-  border-radius: 12px;
-  border: 2px dashed #cbd5e1;
+
+  background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+  /* border-left: 4px solid #4c3535; */
+  border-radius: 10px;
+  margin: 20px 0;
+  color: #475569;
+  font-size: 16px;
+  font-weight: 600;
 }
 
 .dcr-create-message p {
@@ -3819,11 +3839,22 @@ textarea.form-control {
 }
 
 .installation-create-message {
+  width: 100%;
+  padding: 25px;
+  flex-direction: column ;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
   text-align: center;
-  padding: 40px 20px;
-  background: #f0f4ff;
-  border-radius: 12px;
-  border: 2px dashed #1466ff;
+
+  background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+  /* border-left: 4px solid #4c3535; */
+  border-radius: 10px;
+  margin: 20px 0;
+  color: #475569;
+  font-size: 16px;
+  font-weight: 600;
 }
 
 .installation-create-message p {
@@ -4259,7 +4290,6 @@ textarea.form-control {
 
 /* NO DATA MESSAGE */
 .service-list:empty::after {
-  content: "No services added yet";
   display: block;
   text-align: center;
   padding: 40px;

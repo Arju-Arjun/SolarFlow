@@ -349,11 +349,17 @@ const CustomerProfile = () => {
     return () => { if (profileImage) URL.revokeObjectURL(profileImage); };
   }, [profileImage]);
 
-  useEffect(() => {
-    const first = parseFloat(loanDraft?.first_payment || 0);
-    const second = parseFloat(loanDraft?.second_payment || 0);
-    setLoanDraft((prev) => ({ ...prev, total_loan: first + second }));
-  }, [loanDraft?.first_payment, loanDraft?.second_payment]);
+ useEffect(() => {
+  if (!loanDraft) return;
+  const first = parseFloat(loanDraft.first_payment || 0);
+  const second = parseFloat(loanDraft.second_payment || 0);
+  const calculatedTotal = first + second;
+  
+  
+  if (parseFloat(loanDraft.total_loan || 0) !== calculatedTotal) {
+    setLoanDraft((prev) => ({ ...prev, total_loan: calculatedTotal }));
+  }
+}, [loanDraft?.first_payment, loanDraft?.second_payment]);
 
   useEffect(() => {
     const fetchInstallation = async () => {
@@ -1427,8 +1433,7 @@ const CustomerProfile = () => {
                 <div>
                   <h2> KSEB DETAILS</h2>
                   {!ksebProfile ? (
-                    <div className="kseb-create-message">
-                      <p>No KSEB data found for this customer</p>
+                    <div className="mnre-disabled-message">
                       <button className="kseb-edit-btn" onClick={() => { setKsebDraft({ name_change: false, name_change_status: "Pending", name_change_comment: "", load_enhance: false, load_enhance_status: "Pending", load_enhance_comment: "", feasibility: false, fee_paid: false }); setKsebEdit(true); }}>Create KSEB Profile</button>
                     </div>
                   ) : (
@@ -1568,7 +1573,7 @@ const CustomerProfile = () => {
 
                   {!materialDelivery ? (
                     <div className="material-delivery-create-message">
-                      <p>No Material Delivery data found for this customer</p>
+                  
                       <button
                         className="kseb-edit-btn"
                         onClick={() => {
@@ -1732,7 +1737,7 @@ const CustomerProfile = () => {
         {activeTab === "installation" && (
           <div className="module-form">
             <div className="installation-container">
-              {installationLoading ? <p>Loading...<span className="spinner"></span></p> : !installationEdit ? (
+              {!installationEdit ? (
                 <div>
                   <h2> INSTALLATION DETAILS</h2>
 
@@ -2263,6 +2268,7 @@ const CustomerProfile = () => {
           <div className="service-section">
             <div className="service-header"><h2>Service</h2><button onClick={handleServiceAdd}>+ Add Service</button></div>
             {!serviceFormOpen ? (
+              
               <div className="service-list">
                 {/* 💡 FIX: Destructured the items into map first instead of directly pulling reversing array index to avoid Edit UI Populating index mismatch errors */}
                 {[...services].reverse().map((s, mappedIndex) => {
@@ -2270,7 +2276,7 @@ const CustomerProfile = () => {
                   const originalIndex = services.findIndex(item => item.id === s.id);
                   return (
                     <div className="service-card" key={s.id}>
-                      <h4>Service Logs</h4>
+                      <h4>Service #{s.log_number}</h4>
                       <p><b>Date:</b> {s.date}</p>
                       <p><b>Comments:</b> {s.comments}</p>
                       <div className="image-preview">

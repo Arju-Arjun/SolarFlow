@@ -5,27 +5,62 @@ from datetime import datetime
 from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import jwt_required
 from extensions import db
-from utils import upload_to_cloud, delete_to_cloud, send_user_notification
+from utils import upload_to_cloud, delete_to_cloud, send_user_notification, handle_save_push_subscription
 from models import Service, Customer, NotificationAlert, PushSubscription
 
 service_bp = Blueprint("service_bp", __name__, url_prefix="/api/services")
 
 
-def trigger_delayed_alert_simulation(app_instance, user_id, customer_name, customer_id):
+def run_production_maintenance_checker(app_instance, project_id, user_id, customer_name, active_service_id):
     """
-    Background worker thread simulating a maintenance interval lifecycle.
+    Background daemon cycle handler matching production solar workflow specifications.
+    Polls every 24 hours to track structural expiration milestones.
+    Monitors a 30-day maintenance window lifecycle.
+    Triggers alarms daily from day 25 until a new service log entry silences it.
+    Clamps permanently once the project reaches a maximum threshold of 10 service operations.
     """
-    time.sleep(18)
+    polling_delay_seconds = 86400  # 24 Hours
+    print(f"[Maintenance Core] Monitoring lifecycle thread dispatched for Project ID: {project_id}")
     
-    # Executing the clean shared utility function directly from utils
-    send_user_notification(
-        app_instance=app_instance,
-        user_id=user_id,
-        customer_id=customer_id,
-        title="Solar Maintenance Due Soon 🛠️",
-        message=f"Scheduled service cycle for {customer_name} finishes in 2 seconds.",
-        url_path=f"/customer/{customer_id}?tab=service"
-    )
+    while True:
+        time.sleep(polling_delay_seconds)
+        
+        with app_instance.app_context():
+            try:
+                # Rule 4: Query total record count to evaluate structural clamp limits
+                total_services_logged = Service.query.filter_by(project_id=project_id).count()
+                if total_services_logged >= 10:
+                    print(f"[Maintenance Core] Project {project_id} reached max threshold (>=10). Alarm system clamped.")
+                    break
+
+                # Fetch the most recent operation log
+                latest_service = Service.query.filter_by(project_id=project_id).order_by(Service.id.desc()).first()
+                if not latest_service:
+                    break
+
+                if latest_service.id != active_service_id:
+                    print(f"[Maintenance Core] New service log detected for Project {project_id}. Silencing old thread loop.")
+                    break
+
+                current_date = datetime.utcnow().date()
+                base_operation_date = latest_service.service_date
+                days_elapsed = (current_date - base_operation_date).days
+
+                # Rule 2: Alarms begin exactly when 25 days elapse from the last operation milestone
+                if days_elapsed >= 25:
+                    send_user_notification(
+                        app_instance=app_instance,
+                        user_id=user_id,
+                        customer_id=project_id,
+                        title=f"Solar Service Cycle Pending! 🛠️",
+                        message=f"System operation log entry for {customer_name} was updated {days_elapsed} days ago. Maintenance due.",
+                        url_path=f"/customer/{project_id}?tab=service"
+                    )
+                    print(f"[PWA Pipeline] Dispatching scheduled interval maintenance reminder alert for Project: {project_id}")
+
+            except Exception as e:
+                print(f"[Maintenance Core] Background thread validation error: {str(e)}")
+                db.session.rollback()
 
 
 # ==========================================
@@ -46,7 +81,7 @@ def create_service(project_id):
             return jsonify({"error": "Date is required"}), 400
 
         try:
-            service_date = datetime.strptime(date, "%Y-%m-%d")
+            service_date = datetime.strptime(date, "%Y-%m-%d").date()
         except:
             return jsonify({"error": "Invalid date format"}), 400
 
@@ -68,9 +103,10 @@ def create_service(project_id):
 
         flask_app = current_app._get_current_object()
         
+        # 💡 FIXED: Passing the new service.id to track and stop duplicating background loops
         threading.Thread(
-            target=trigger_delayed_alert_simulation,
-            args=(flask_app, customer.user_id, customer.name, customer.id),
+            target=run_production_maintenance_checker,
+            args=(flask_app, project_id, customer.user_id, customer.name, service.id),
             daemon=True
         ).start()
 
@@ -92,7 +128,7 @@ def update_service(id):
         comments = request.form.get("comments")
 
         if date:
-            service.service_date = datetime.strptime(date, "%Y-%m-%d")
+            service.service_date = datetime.strptime(date, "%Y-%m-%d").date()
         if comments:
             service.comments = comments
 
@@ -149,20 +185,27 @@ def delete_service(id):
 
 
 # ==========================================
-# GET SERVICES BY PROJECT ID
+# GET SERVICES BY PROJECT ID (WITH SEQUENTIAL NUMBERING)
 # ==========================================
 @service_bp.route("/project/<int:project_id>", methods=["GET"])
 @jwt_required()
 def get_services(project_id):
     try:
-        services = Service.query.filter_by(project_id=project_id).order_by(Service.id.desc()).all()
+        services = Service.query.filter_by(project_id=project_id).order_by(Service.id.asc()).all()
+        
         service_list = []
-        for s in services:
+        for index, s in enumerate(services):
             service_list.append({
-                "id": s.id, "date": str(s.service_date), "comments": s.comments,
+                "id": s.id,
+                "log_number": index + 1,  
+                "date": str(s.service_date),
+                "comments": s.comments,
                 "images": json.loads(s.images) if s.images else []
             })
+            
+        service_list.reverse()
         return jsonify(service_list), 200
+        
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     
@@ -233,31 +276,9 @@ def delete_notification(alert_id):
 @service_bp.route("/save-subscription", methods=["POST"])
 @jwt_required()
 def save_push_subscription():
-    try:
-        from flask_jwt_extended import get_jwt_identity
-        current_user_id = get_jwt_identity()
-        
-        subscription_data = request.get_json()
-        if not subscription_data or "endpoint" not in subscription_data:
-            return jsonify({"error": "Invalid subscription data payload"}), 400
-
-        existing_sub = PushSubscription.query.filter_by(endpoint=subscription_data["endpoint"]).first()
-        if existing_sub:
-            existing_sub.user_id = current_user_id 
-            db.session.commit()
-            return jsonify({"message": "Subscription token refreshed successfully"}), 200
-
-        new_subscription = PushSubscription(
-            user_id=current_user_id,
-            endpoint=subscription_data["endpoint"],
-            p256dh=subscription_data["keys"]["p256dh"],
-            auth=subscription_data["keys"]["auth"]
-        )
-        
-        db.session.add(new_subscription)
-        db.session.commit()
-        return jsonify({"message": "PWA Web Push subscription mapped successfully"}), 201
-
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({"error": str(e)}), 500
+    from flask_jwt_extended import get_jwt_identity
+    current_user_id = get_jwt_identity()
+    subscription_data = request.get_json()
+    
+    result, status_code = handle_save_push_subscription(current_user_id, subscription_data)
+    return jsonify(result), status_code

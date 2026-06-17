@@ -1,25 +1,89 @@
 import os
+import random
+import time
+import json
+from datetime import datetime, timedelta
 from flask import current_app
 from flask_mail import Message
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
-from extensions import mail,db
+from extensions import mail, db
 import cloudinary
 import cloudinary.uploader
 from dotenv import load_dotenv
-import json
 from pywebpush import webpush, WebPushException
-from models import NotificationAlert, PushSubscription
+# 💡 ഇംപോർട്ടുകൾ കൃത്യമായി ക്ലബ്ബ് ചെയ്തിട്ടുണ്ട് (OTP മോഡൽ ഉൾപ്പെടെ)
+from models import NotificationAlert, PushSubscription, OTP
 
 load_dotenv()
 
-# ================= CLOUDINARY CONFIGURATION =================
+# ==========================================
+# CLOUDINARY CONFIGURATION
+# ==========================================
 cloudinary.config(
     cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
     api_key=os.getenv("CLOUDINARY_API_KEY"),
     api_secret=os.getenv("CLOUDINARY_API_SECRET")
 )
 
-# ================= PASSWORD RESET TOKENS =================
+
+# ==========================================
+# OTP DATABASE HANDLING
+# ==========================================
+def generate_otp():
+    """Generates a secure 6-digit numeric verification code."""
+    return str(random.randint(100000, 999999))
+
+
+def store_otp(email, otp, ttl=300):
+    """Stores the generated OTP in the database with a specific TTL (seconds)."""
+    try:
+        # Delete any existing OTP for this email to prevent collision
+        OTP.query.filter_by(email=email).delete()
+        db.session.commit()
+        
+        # Create new OTP record
+        otp_record = OTP(
+            email=email,
+            otp=otp,
+            expires_at=datetime.utcnow() + timedelta(seconds=ttl)
+        )
+        db.session.add(otp_record)
+        db.session.commit()
+        return True
+    except Exception as e:
+        print(f"Error storing OTP: {str(e)}")
+        db.session.rollback()
+        return False
+
+
+def verify_otp(email, otp):
+    """Verifies OTP directly against the database timestamp parameters."""
+    try:
+        otp_record = OTP.query.filter_by(email=email).first()
+        
+        if not otp_record:
+            return False, "OTP not found"
+        
+        if datetime.utcnow() > otp_record.expires_at:
+            db.session.delete(otp_record)
+            db.session.commit()
+            return False, "OTP expired"
+        
+        if otp_record.otp != otp:
+            return False, "Invalid OTP"
+        
+        # Delete OTP record safely after successful verification
+        db.session.delete(otp_record)
+        db.session.commit()
+        return True, "OTP verified"
+    except Exception as e:
+        print(f"Error verifying OTP: {str(e)}")
+        return False, "Database error"
+
+
+# ==========================================
+# TIMED TOKENS / SERIALIZERS
+# ==========================================
 def _get_serializer():
     secret = current_app.config.get("SECRET_KEY")
     return URLSafeTimedSerializer(secret, salt="password-reset-salt")
@@ -36,7 +100,9 @@ def verify_reset_token(token, expiration=3600):
         return None
 
 
-# ================= EMAIL FUNCTION =================
+# ==========================================
+# EMAIL SYSTEM
+# ==========================================
 def send_email(subject, recipients, body, html=None):
     if not recipients:
         return False
@@ -47,11 +113,9 @@ def send_email(subject, recipients, body, html=None):
         subject=subject,
         sender=sender,
         recipients=recipients,
-        body=body
+        body=body,
+        html=html
     )
-
-    if html:
-        msg.html = html
 
     try:
         print("Sending email...")
@@ -70,38 +134,37 @@ def send_email(subject, recipients, body, html=None):
         return False
 
 
-# ================= FILE UPLOAD & PURGE FUNCTIONS =================
+# ==========================================
+# FILE UPLOAD & CLOUD PURGE FUNCTIONS
+# ==========================================
 ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'webp', 'gif'}
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+
 def upload_to_cloud(file, folder_name):
     """
-    Accepts a file stream object and a destination folder name.
-    Uploads directly to Cloudinary and returns the secure HTTPS link string.
-    Forces resource_type="raw" for PDFs to preserve visual rendering integrity.
+    Accepts a file stream object, normalizes properties and uploads directly to Cloudinary.
+    Forces resource_type="raw" for PDFs to prevent visualization breakdown.
     """
     if file and allowed_file(file.filename):
         try:
-            # Extract and normalize the file extension to lowercase
             file_name = file.filename.lower() if file.filename else ""
 
             if file_name.endswith('.pdf'):
-                # 📄 Upload PDF files in their original raw format without modifications
                 upload_result = cloudinary.uploader.upload(
                     file, 
                     folder=folder_name, 
                     resource_type="raw"
                 )
             else:
-                # 📸 Upload images with automatic visual quality and format optimization
                 upload_result = cloudinary.uploader.upload(
                     file, 
                     folder=folder_name, 
                     resource_type="auto",
-                    quality="auto",        # Automatically optimizes image size while preserving 100% visual fidelity
-                    fetch_format="auto"    # Delivers the best modern format (like WebP/AVIF) depending on the browser
+                    quality="auto",        
+                    fetch_format="auto"    
                 )
             return upload_result.get("secure_url")
         except Exception as e:
@@ -111,10 +174,7 @@ def upload_to_cloud(file, folder_name):
 
 
 def delete_to_cloud(file_url):
-    """
-    Parses a secure Cloud URL, extracts its distinct public ID,
-    and removes the asset from your cloud delivery storage infrastructure.
-    """
+    """Parses a Cloud URL, extracts public ID, and destroys the target resource asset."""
     if not file_url or "res.cloudinary.com" not in file_url:
         return False
         
@@ -139,6 +199,9 @@ def delete_to_cloud(file_url):
         return False
     
 
+# ==========================================
+# NOTIFICATION SYSTEM FUNCTION
+# ==========================================
 def send_user_notification(app_instance, user_id, customer_id, title, message, url_path=None):
     with app_instance.app_context():
         try:
@@ -177,3 +240,34 @@ def send_user_notification(app_instance, user_id, customer_id, title, message, u
         except Exception as e:
             db.session.rollback()
             print(f"[Notification System] Global trigger error: {str(e)}")
+
+
+# ==========================================
+# PWA PUSH TOKEN STORAGE FUNCTION
+# ==========================================
+def handle_save_push_subscription(current_user_id, subscription_data):
+    """Saves or refreshes a PWA Web Push subscription token for a specific user."""
+    try:
+        if not subscription_data or "endpoint" not in subscription_data:
+            return {"error": "Invalid subscription data payload"}, 400
+
+        existing_sub = PushSubscription.query.filter_by(endpoint=subscription_data["endpoint"]).first()
+        if existing_sub:
+            existing_sub.user_id = current_user_id 
+            db.session.commit()
+            return {"message": "Subscription token refreshed successfully"}, 200
+
+        new_subscription = PushSubscription(
+            user_id=current_user_id,
+            endpoint=subscription_data["endpoint"],
+            p256dh=subscription_data["keys"]["p256dh"],
+            auth=subscription_data["keys"]["auth"]
+        )
+        
+        db.session.add(new_subscription)
+        db.session.commit()
+        return {"message": "PWA Web Push subscription mapped successfully"}, 201
+
+    except Exception as e:
+        db.session.rollback()
+        return {"error": str(e)}, 500

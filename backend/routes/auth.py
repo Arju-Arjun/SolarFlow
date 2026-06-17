@@ -1,60 +1,131 @@
 import re
-from flask import Blueprint, current_app, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import create_access_token
-from extensions import db, bcrypt, mail
+from extensions import db, bcrypt
 from models import User
-from utils import send_email, generate_reset_token, verify_reset_token
+
+from utils import (
+    generate_otp,
+    store_otp,
+    verify_otp,
+    send_email,
+    generate_reset_token,
+    verify_reset_token
+)
 
 auth_bp = Blueprint("auth_bp", __name__)
 
 EMAIL_REGEX = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
-def _valid_email(email):
+
+# ================= HELPERS =================
+def valid_email(email):
     return bool(email and EMAIL_REGEX.match(email))
 
-def _validate_passwords(password, confirm_password):
-    return bool(password and confirm_password and password == confirm_password and len(password) >= 6)
 
-# ================= REGISTER =================
-@auth_bp.route("/register", methods=["POST"])
-def register():
+def valid_password(password, confirm):
+    return (
+        password
+        and confirm
+        and password == confirm
+        and len(password) >= 6
+    )
+
+
+# ================= STEP 1: REQUEST OTP & VALIDATE =================
+@auth_bp.route("/register/request-otp", methods=["POST"])
+def request_otp():
     data = request.get_json() or {}
+
     name = data.get("name", "").strip()
     email = data.get("email", "").strip().lower()
     password = data.get("password", "")
-    confirm_password = data.get("confirmPassword", "")
+    confirm = data.get("confirmPassword", "")
     mobile = data.get("mobile", "").strip()
 
-    if not name or not _valid_email(email) or not _validate_passwords(password, confirm_password) or not mobile:
-        return jsonify({"message": "Invalid registration data."}), 400
+    # 💡 മခြား് ലോജിക്കുകൾ മാറ്റാതെ ആദ്യം തന്നെ ഡാറ്റ വാലിഡേറ്റ് ചെയ്യുന്നു
+    if not name or not valid_email(email) or not valid_password(password, confirm) or not mobile:
+        return jsonify({"message": "Invalid registration data"}), 400
 
     if User.query.filter_by(email=email).first():
-        return jsonify({"message": "Email is already registered."}), 409
+        return jsonify({"message": "Email already exists"}), 409
 
-    password_hash = bcrypt.generate_password_hash(password).decode("utf-8")
-    user = User(name=name, email=email, password=password_hash, mobile=mobile)
+    # Generate and store OTP securely inside db
+    otp = generate_otp()
+    if not store_otp(email, otp, ttl=300):
+        return jsonify({"message": "Database configuration failure"}), 500
+
+    # Dispatch verification code
+    send_email(
+        "Your OTP Code",
+        [email],
+        f"Your verification code is {otp}. Valid for 5 minutes."
+    )
+
+    return jsonify({"message": "OTP sent to your email successfully"}), 200
+
+
+# ================= STEP 2: VERIFY OTP + REGISTER =================
+@auth_bp.route("/register/verify-otp", methods=["POST"])
+def verify_otp_register():
+    data = request.get_json() or {}
+
+    name = data.get("name", "").strip()
+    email = data.get("email", "").strip().lower()
+    password = data.get("password", "")
+    confirm = data.get("confirmPassword", "")
+    mobile = data.get("mobile", "")
+    otp = data.get("otp", "")
+
+    if not name or not valid_email(email) or not valid_password(password, confirm) or not mobile or not otp:
+        return jsonify({"message": "Invalid data"}), 400
+
+    # Validate generated token threshold
+    ok, msg = verify_otp(email, otp)
+    if not ok:
+        return jsonify({"message": msg}), 400
+
+    if User.query.filter_by(email=email).first():
+        return jsonify({"message": "User already exists"}), 409
+
+    hashed = bcrypt.generate_password_hash(password).decode("utf-8")
+
+    user = User(
+        name=name,
+        email=email,
+        password=hashed,
+        mobile=mobile
+    )
 
     db.session.add(user)
     db.session.commit()
 
-    return jsonify({"message": "Registration successful."}), 201
+    return jsonify({"message": "Registered successfully"}), 201
+
 
 # ================= LOGIN =================
 @auth_bp.route("/login", methods=["POST"])
 def login():
     data = request.get_json() or {}
+
     email = data.get("email", "").strip().lower()
     password = data.get("password", "")
 
-    if not _valid_email(email) or not password:
-        return jsonify({"message": "Email and password are required."}), 400
+    if not valid_email(email) or not password:
+        return jsonify({"message": "Invalid input"}), 400
 
     user = User.query.filter_by(email=email).first()
-    if not user or not bcrypt.check_password_hash(user.password, password):
-        return jsonify({"message": "Invalid email or password."}), 401
 
-    access_token = create_access_token(identity=str(user.id))
-    return jsonify({"token": access_token, "user": user.to_dict()}), 200
+    if not user or not bcrypt.check_password_hash(user.password, password):
+        return jsonify({"message": "Invalid credentials"}), 401
+
+    token = create_access_token(identity=str(user.id))
+
+    return jsonify({
+        "token": token,
+        "user": user.to_dict()
+    }), 200
+
 
 # ================= FORGOT PASSWORD =================
 @auth_bp.route("/forgot-password", methods=["POST"])
@@ -62,46 +133,55 @@ def forgot_password():
     data = request.get_json() or {}
     email = data.get("email", "").strip().lower()
 
-    if not _valid_email(email):
-        return jsonify({"message": "Valid email is required."}), 400
+    if not valid_email(email):
+        return jsonify({"message": "Invalid email"}), 400
 
     user = User.query.filter_by(email=email).first()
+
     if not user:
-        return jsonify({"message": "If the email is registered, a reset link has been sent."}), 200
+        return jsonify({"message": "If email exists, reset link sent"}), 200
 
-    token = generate_reset_token(user.email)
-    frontend_host = current_app.config.get("FRONTEND_URL") or request.host_url.rstrip("/")
-    reset_url = f"{frontend_host}/reset-password?token={token}"
+    token = generate_reset_token(email)
 
-    message = f"Reset your password: {reset_url}"
-    send_email("Password Reset", [user.email], message)
+    frontend = current_app.config.get("FRONTEND_URL")
+
+    reset_url = f"{frontend}/reset-password?token={token}"
+
+    send_email(
+        "Password Reset",
+        [email],
+        f"Reset your password: {reset_url}"
+    )
 
     return jsonify({"message": "Reset link sent"}), 200
+
 
 # ================= RESET PASSWORD =================
 @auth_bp.route("/reset-password", methods=["POST"])
 def reset_password():
     data = request.get_json() or {}
-    token = data.get("token", "").strip()
-    password = data.get("password", "")
-    confirm_password = data.get("confirmPassword", "")
 
-    if not token or not password or not confirm_password:
-        return jsonify({"message": "Token, password, and confirm password are required."}), 400
+    token = data.get("token")
+    password = data.get("password")
+    confirm = data.get("confirmPassword")
 
-    if not _validate_passwords(password, confirm_password):
-        return jsonify({"message": "Passwords must match and be at least 6 characters long."}), 400
+    if not token or not password or not confirm:
+        return jsonify({"message": "Missing fields"}), 400
+
+    if not valid_password(password, confirm):
+        return jsonify({"message": "Passwords do not match"}), 400
 
     email = verify_reset_token(token)
+
     if not email:
-        return jsonify({"message": "Invalid or expired token."}), 400
+        return jsonify({"message": "Invalid or expired token"}), 400
 
     user = User.query.filter_by(email=email).first()
-    if not user:
-        return jsonify({"message": "User not found."}), 404
 
-    password_hash = bcrypt.generate_password_hash(password).decode("utf-8")
-    user.password = password_hash
+    if not user:
+        return jsonify({"message": "User not found"}), 404
+
+    user.password = bcrypt.generate_password_hash(password).decode("utf-8")
     db.session.commit()
 
     return jsonify({"message": "Password reset successful."}), 200
