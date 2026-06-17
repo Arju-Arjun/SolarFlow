@@ -118,7 +118,6 @@ def create_app():
 
     return app
 
-
 # ================= RUN APP =================
 if __name__ == "__main__":
     app = create_app()
