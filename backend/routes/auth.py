@@ -43,7 +43,7 @@ def request_otp():
     confirm = data.get("confirmPassword", "")
     mobile = data.get("mobile", "").strip()
 
-    # 💡 മခြား് ലോജിക്കുകൾ മാറ്റാതെ ആദ്യം തന്നെ ഡാറ്റ വാലിഡേറ്റ് ചെയ്യുന്നു
+  
     if not name or not valid_email(email) or not valid_password(password, confirm) or not mobile:
         return jsonify({"message": "Invalid registration data"}), 400
 
