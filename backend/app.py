@@ -117,32 +117,6 @@ def create_app():
         return jsonify({"error": "Internal server error", "message": str(error)}), 500
 
     return app
-@app.route("/test-smtp")
-def test_smtp():
-    try:
-        import smtplib
-        import os
-
-        print("Testing SMTP...")
-
-        server = smtplib.SMTP(
-            os.getenv("MAIL_SERVER"),
-            int(os.getenv("MAIL_PORT")),
-            timeout=15
-        )
-
-        server.starttls()
-        server.login(
-            os.getenv("MAIL_USERNAME"),
-            os.getenv("MAIL_PASSWORD")
-        )
-
-        server.quit()
-
-        return "SMTP WORKING ✅"
-
-    except Exception as e:
-        return f"SMTP FAILED ❌ {str(e)}"
 
 # ================= RUN APP =================
 if __name__ == "__main__":
